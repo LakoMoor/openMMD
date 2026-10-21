@@ -1,0 +1,4 @@
+/target/
+/reference/
+*.DS_Store
+/site/app/pkg/

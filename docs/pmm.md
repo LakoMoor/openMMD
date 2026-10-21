@@ -1,0 +1,39 @@
+# PMM compatibility
+
+`PmmProject` reads PMM version 1 and version 2 model sections. Version 1 requires `parse_with_resolver(bytes, |path| -> Result<format::Model>)`: PMM v1 does not store the bone and morph names/counts needed to locate subsequent sections. Version 2 embeds those names and can be read with `PmmProject::parse(bytes)`.
+
+Each model exposes its original `name`, Windows-style `path`, and a `Motion` with sorted bone/morph keys. The loader follows previous-key links to recover track ownership; it checks counts, lengths, cycles and invalid links. Model visibility, constraints, outside-parent data, bone state and editor state are located structurally. Camera and light sections are available through the optional `scene_tracks()` reader. Accessory, audio, physics and trailing editor sections remain opaque: they are preserved but not interpreted or validated.
+
+## Saving and editing
+
+`to_bytes()` returns the file with the explicitly committed changes. A load/save with no edits is byte-identical, including unknown sections. `set_bone_key(model_index, name, frame, translation, rotation)` and `set_morph_key(model_index, name, frame, weight)` patch existing animation values in place, preserving frame numbers, interpolation, flags and all other bytes.
+
+`set_motion(model_index, Motion)` atomically replaces that model's bone/morph animation. It supports adding, deleting and retiming keys on existing tracks. It rebuilds initial records, additional record counts, previous/next links and global key indices, updates the model's final frame field, and adjusts the offsets of later models. Only the two animation sections and the final frame field are replaced; all other bytes remain unchanged. Calling it with an unchanged motion preserves the entire original file.
+
+Each PMM track requires an initial frame-zero record. Removing it resets that track at frame zero to the identity bone transform or zero morph weight. Missing tracks are reset the same way. New records use the supplied VMD interpolation and clear selection/physics-disable flags. Existing records retain selection/physics flags. A retimed record retains these flags when it can be uniquely identified by unchanged transform/interpolation or morph weight among removed records; otherwise it receives new-record flags. Existing unedited bone payloads retain their original float bytes. Edited rotations are normalized.
+
+Names absent from the project's skeleton, duplicate frame numbers, invalid values, and ambiguous edits to duplicate-name tracks are rejected before modifying the file. Some bundled models have repeated bone names: those tracks are retained unchanged while other tracks are edited. The name-based `Motion` API cannot distinguish edits to the repeated names themselves. Editing those tracks would require a future index-based API.
+
+Direct edits to the public `motion` view are not serialized; keep an independent editor motion and commit it through `set_motion`, or use the existing-key setters. Replacing models, creating new PMM documents and editing opaque sections are not implemented. This is partial PMM editing compatibility, not a complete MMD editor or full PMM implementation.
+
+## Model asset paths
+
+`set_model_path(model_index, path)` replaces a model reference in the fixed 256-byte path field used by both PMM versions. The caller chooses the exact absolute or relative path; the method does not copy assets or resolve paths. It updates the model's public `path` view and preserves every byte outside that field. Existing model-animation operations track the path field's relocated offset when earlier model records change size.
+
+Paths must be nonempty, contain no NUL/control characters, round-trip exactly through Shift-JIS, and use at most 255 encoded bytes plus the terminator. Invalid input leaves the project unchanged. The round-trip check also rejects Unicode characters that would silently change filenames, such as a yen sign encoded as a backslash. Saving a PMM in another directory requires rebasing its relative references or writing usable absolute asset paths; absolute paths remain specific to the machine and platform. No-edit save behavior is unchanged unless this setter is explicitly called.
+
+## Camera and light
+
+`scene_tracks() -> Result<PmmSceneTracks>` parses the sections immediately after the model blocks. This is a separate reader so a model project with an unsupported or truncated tail can still be preserved and edited. The result can be cached for playback: it contains public `camera: Vec<PmmCameraKey>`, `light: Vec<PmmLightKey>`, `current_camera`, and `current_light`. Refresh this cache after committing scene edits. Model animation rewrites maintain the camera/light section offset automatically.
+
+Camera keys expose `frame`, signed `distance`, `look_at`, Euler `angle` in radians, `fov` in degrees, `perspective`, six interpolation curves and v2 `parent_model`/`parent_bone` attachment indices. Negative attachment indices mean no attachment. `current_camera` contains the editor's current look-at point, position, Euler angle, perspective flag and header FOV. Light keys expose `frame`, RGB `color` and `direction`; `current_light` exposes the editor's current light values.
+
+`scene.camera_at(frame)` samples per-axis look-at, Euler rotation, distance and FOV using the destination key's six Bezier curves. Perspective and attachment indices change at key boundaries. Sampling returns camera-local coordinates: applying parent model/bone transforms is the renderer's responsibility. `scene.light_at(frame)` linearly interpolates color and direction. Directions are not normalized during sampling. Both methods hold the nearest endpoint outside the animation. `project.camera_at(frame)` and `project.light_at(frame)` are convenience methods that reparse the sections; cache `scene_tracks` for frame-by-frame playback.
+
+`set_camera_key` / `set_light_key` insert or replace keys by frame. `set_camera_keys(Vec<PmmCameraKey>)` / `set_light_keys(Vec<PmmLightKey>)` also support deleting and retiming keys. They atomically rebuild their own record counts and links while preserving current editor state and every other section byte-for-byte. Selection flags at existing frame numbers are retained; new frame numbers clear selection. Camera FOV is stored as an integer in PMM and is rounded when edited. Omitted frame zero becomes the default camera or light. V1 cannot store the v2 camera attachments, so a setter rejects such values. The setters do not implement camera attachment evaluation or physics.
+
+## Validation
+
+The format layout was studied using nanoem's `nanoem/ext/document.c` (MIT, https://github.com/hkrn/nanoem). This Rust implementation was written for this project. Bundled MMD 9.32 sample files use PMM version 1.
+
+Run `cargo test pmm --lib -- --include-ignored` with the original archive extracted under `reference/original`. Tests load all three original samples, verify byte-identical save, insert bone/morph keys into every model, reopen, delete keys and reopen again. They also parse camera/light tracks from every sample, insert scene keys, reparse, restore the original tracks and verify preservation of the accessory/editor tail. Synthetic version 2 tests cover insertion, deletion, retiming, multi-model offset relocation, patch isolation, opaque-section preservation, invalid-value atomicity, bounds, malformed counts and linked-list handling. Scene tests additionally exercise Bezier camera sampling, light sampling, perspective changes, scene resizing followed by model resizing, and preservation of the unparsed remainder. Path tests rebase all three bundled v1 samples to actual asset locations and reopen them using the serialized paths; v2 tests verify byte isolation, field capacity, encoding validation and atomic rejection. The original Windows MMD application has not been used to validate the rewritten files.

@@ -1,0 +1,32 @@
+[package]
+name = "openmmd"
+version = "0.1.0"
+edition = "2021"
+description = "An independent MMD-compatible editor for desktop and WebGPU"
+license = "MIT"
+repository = "https://github.com/LakoMoor/openMMD"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+anyhow = "1"
+bytemuck = { version = "1", features = ["derive"] }
+eframe = { version = "0.35.0", default-features = false, features = ["wgpu", "default_fonts", "x11", "wayland"] }
+encoding_rs = "0.8"
+glam = "0.30"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "bmp", "tga"] }
+rfd = "0.15"
+
+[dev-dependencies]
+pollster = "0.4"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+ab_glyph = "0.2"
+wasm-bindgen = "=0.2.128"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = ["Window", "Document", "HtmlCanvasElement", "HtmlElement", "HtmlAnchorElement", "Element", "Node", "Blob", "BlobPropertyBag", "Url", "console"] }
+
+[profile.release]
+lto = "thin"

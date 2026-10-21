@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101b1c">
+<title>openMMD Web — Rust + WebGPU editor</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101b1c;color:#deebe7;font-family:system-ui,sans-serif}header{height:48px;display:flex;align-items:center;gap:24px;padding:0 20px;border-bottom:1px solid #30403d;font-size:13px}a{color:#78dec6;text-decoration:none}header strong{font-size:17px}header span{color:#94a9a2}header a:last-child{margin-left:auto}#openmmd_canvas{display:block;width:100%;height:calc(100% - 48px);outline:none}#boot{position:absolute;inset:48px 0 0;display:grid;place-content:center;text-align:center;padding:24px;background:#101b1c;z-index:2}#boot[hidden]{display:none}#boot h1{font-weight:500;font-size:clamp(26px,5vw,48px);letter-spacing:-.04em}#boot p{max-width:650px;line-height:1.65;color:#a9bbb4;overflow-wrap:anywhere}.spinner{margin:auto;width:36px;height:36px;border:2px solid #30403d;border-top-color:#78dec6;border-radius:50%;animation:spin 1s linear infinite}#boot.failed .spinner{display:none}#boot.failed h1{color:#f6c39a}@keyframes spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.spinner{animation:none}}@media(max-width:650px){header{gap:12px;padding:0 12px}header span{display:none}}
+</style>
+</head>
+<body>
+<header><a href="../" aria-label="Back to openMMD project">← Project</a><strong>openMMD <a href="./">Web</a></strong><span>Rust · WebAssembly · WebGPU</span><a href="https://github.com/LakoMoor/openMMD">Source ↗</a></header>
+<canvas id="openmmd_canvas" aria-label="openMMD animation editor" tabindex="0"></canvas>
+<div id="boot" role="status" aria-live="polite"><div class="spinner" aria-hidden="true"></div><h1>Opening the stage.</h1><p id="boot-message">Loading the Rust editor. This first load downloads the WebAssembly application. Your model files stay in your browser.</p></div>
+<script type="module">
+const boot=document.querySelector('#boot');
+try {
+  if (!navigator.gpu) throw new Error('WebGPU is unavailable. Use a recent Chrome or Edge with hardware acceleration, on HTTPS or localhost. You can also build the desktop version.');
+  const module=await import('./pkg/openmmd.js');
+  await module.default();
+  await module.start('openmmd_canvas');
+  window.openMMD=module;
+  boot.hidden=true;
+  document.querySelector('canvas').focus();
+} catch(error) {
+  boot.classList.add('failed');
+  boot.querySelector('h1').textContent='The editor could not start.';
+  const detail=String(error.message || error).split("\n")[0];
+  document.querySelector('#boot-message').textContent=detail.startsWith("WebGPU is unavailable") ? detail : "Browser graphics initialization failed. Try a recent Chrome or Edge with hardware acceleration enabled. Technical details are in the browser console.";
+  const link=document.createElement('a');link.href='../#get-started';link.textContent='Desktop setup and compatibility →';boot.append(link);
+  console.error(error);
+}
+</script>
+</body>
+</html>
