@@ -64,7 +64,9 @@ impl<'a> Reader<'a> {
         } else {
             ensure!(n % 2 == 0, "odd PMX UTF-16 length");
             let u: Vec<u16> = b
-                .chunks_exact(2)
+                .as_chunks::<2>()
+                .0
+                .iter()
                 .map(|v| u16::from_le_bytes([v[0], v[1]]))
                 .collect();
             Ok(String::from_utf16(&u).context("invalid PMX UTF-16")?)

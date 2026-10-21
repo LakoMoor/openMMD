@@ -532,8 +532,10 @@ mod tests {
         let data = buffer.slice(..).get_mapped_range();
         let background = data[..4].to_vec();
         let foreground = data
-            .chunks_exact(4)
-            .filter(|p| *p != background.as_slice())
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .filter(|p| p.as_slice() != background.as_slice())
             .count();
         assert!(
             foreground > 5000,
