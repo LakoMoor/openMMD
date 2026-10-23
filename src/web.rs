@@ -196,6 +196,7 @@ pub struct WebApp {
     bone: usize,
     morph: usize,
     project: Option<PmmProject>,
+    vmd_scene: Motion,
     scene: Option<PmmSceneTracks>,
     pending_project: Option<String>,
     frame: f32,
@@ -218,7 +219,7 @@ impl WebApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         cc.egui_ctx.set_visuals(egui::Visuals::dark());
         CONTEXT.with(|c| *c.borrow_mut() = Some(cc.egui_ctx.clone()));
-        Self {renderer:Renderer::new(cc.wgpu_render_state.clone().expect("wgpu backend required")),assets:HashMap::new(),models:Vec::new(),selected:0,bone:0,morph:0,project:None,scene:None,pending_project:None,frame:0.,end:300,playing:false,looping:true,last_time:None,yaw:0.,pitch:0.12,distance:45.,focus:Vec3::new(0.,10.,0.),ik:true,follow_camera:false,translation:Vec3::ZERO,rotation:Vec3::ZERO,morph_weight:0.,status:"Open local models, motions and textures together, or try the procedural demo. Files stay in this browser tab.".into()}
+        Self {renderer:Renderer::new(cc.wgpu_render_state.clone().expect("wgpu backend required")),assets:HashMap::new(),models:Vec::new(),selected:0,bone:0,morph:0,project:None,vmd_scene:Motion::default(),scene:None,pending_project:None,frame:0.,end:300,playing:false,looping:true,last_time:None,yaw:0.,pitch:0.12,distance:45.,focus:Vec3::new(0.,10.,0.),ik:true,follow_camera:false,translation:Vec3::ZERO,rotation:Vec3::ZERO,morph_weight:0.,status:"Open local models, motions and textures together, or try the procedural demo. Files stay in this browser tab.".into()}
     }
     fn report(&mut self, result: Result<()>) {
         if let Err(e) = result {
@@ -305,6 +306,7 @@ impl WebApp {
                 history: History::default(),
             });
         }
+        self.vmd_scene = Motion::default();
         self.scene = Some(project.scene_tracks()?);
         self.models = models;
         self.project = Some(project);
@@ -418,26 +420,50 @@ impl WebApp {
                 self.morph = 0;
                 self.project = None;
                 self.scene = None;
-                self.follow_camera = false;
+                self.follow_camera = !self.vmd_scene.cameras.is_empty();
             }
         }
         for name in &names {
             match extension(name).as_str() {
                 "vmd" => {
                     let motion = Motion::parse(&self.assets[name])?;
-                    let target = self
-                        .models
-                        .iter()
-                        .position(|s| s.model.name == motion.model_name)
-                        .unwrap_or(self.selected);
-                    let s = self
-                        .models
-                        .get_mut(target)
-                        .context("Open a model before importing motion")?;
-                    s.history.checkpoint(&s.motion);
-                    s.motion = motion;
-                    self.end = self.end.max(s.motion.last_frame);
-                    self.selected = target;
+                    let model_motion = motion.has_model_tracks() || !motion.has_scene_tracks();
+                    ensure!(
+                        !model_motion || !self.models.is_empty(),
+                        "Open a model before importing bone/morph/IK motion"
+                    );
+                    let merged_scene = self.vmd_scene.merged_scene(&motion)?;
+                    let mut project = self.project.clone();
+                    if let Some(project) = project.as_mut() {
+                        if !motion.cameras.is_empty() {
+                            project.set_camera_keys(motion.cameras.clone())?;
+                        }
+                        if !motion.lights.is_empty() {
+                            project.set_light_keys(motion.lights.clone())?;
+                        }
+                    }
+                    if model_motion {
+                        let target = self
+                            .models
+                            .iter()
+                            .position(|s| s.model.name == motion.model_name)
+                            .unwrap_or(self.selected);
+                        let s = &mut self.models[target];
+                        s.history.checkpoint(&s.motion);
+                        s.motion = motion.clone();
+                        self.selected = target;
+                    }
+                    if motion.has_scene_tracks() {
+                        self.vmd_scene = merged_scene;
+                        if let Some(project) = project {
+                            self.scene = Some(project.scene_tracks()?);
+                            self.project = Some(project);
+                            self.vmd_scene.cameras.clear();
+                            self.vmd_scene.lights.clear();
+                        }
+                        self.follow_camera = true;
+                    }
+                    self.end = self.end.max(motion.last_frame);
                 }
                 "vpd" => {
                     let pose = vpd::parse(&self.assets[name])?;
@@ -464,18 +490,34 @@ impl WebApp {
         );
         Ok(())
     }
+    fn scene_motion(&self) -> Motion {
+        let mut motion = self.vmd_scene.clone();
+        motion.model_name = "カメラ・照明".into();
+        if let Some(scene) = &self.scene {
+            if motion.cameras.is_empty() {
+                motion.cameras = scene.camera.clone();
+            }
+            if motion.lights.is_empty() {
+                motion.lights = scene.light.clone();
+            }
+        }
+        motion.recompute_duration();
+        motion
+    }
     fn export(&mut self, kind: &str) -> Result<()> {
         match kind {
             "pmm" => {
+                ensure!(self.vmd_scene.shadows.is_empty() && self.vmd_scene.trailing_data.is_empty(),"PMM cannot yet store imported VMD shadows/extensions; export scene VMD instead");
                 let mut p = self
                     .project
                     .clone()
                     .context("Load a PMM project before exporting PMM")?;
                 for (i, s) in self.models.iter().enumerate() {
-                    p.set_motion(i, s.motion.clone())?;
+                    p.set_motion(i, s.motion.model_only())?;
                 }
                 download("openmmd-edited.pmm", &p.to_bytes())?;
             }
+            "scene-vmd" => download("openmmd-camera-light.vmd", &self.scene_motion().to_vmd()?)?,
             "vmd" => {
                 let s = self
                     .models
@@ -541,6 +583,7 @@ impl WebApp {
             history: History::default(),
         }];
         self.project = None;
+        self.vmd_scene = Motion::default();
         self.scene = None;
         self.pending_project = None;
         self.follow_camera = false;
@@ -707,8 +750,8 @@ impl WebApp {
         ui.heading("Viewport");
         ui.checkbox(&mut self.ik, "Basic IK");
         ui.add_enabled(
-            self.scene.is_some(),
-            egui::Checkbox::new(&mut self.follow_camera, "Follow PMM camera + light"),
+            self.scene.is_some() || !self.vmd_scene.cameras.is_empty(),
+            egui::Checkbox::new(&mut self.follow_camera, "Follow scene camera"),
         );
         ui.add(egui::Slider::new(&mut self.distance, 5.0..=200.0).text("Distance"));
         if ui.button("Reset orbit camera").clicked() {
@@ -888,12 +931,17 @@ impl eframe::App for WebApp {
                 }
                 for (label, kind) in [
                     ("Export VMD", "vmd"),
+                    ("Export scene VMD", "scene-vmd"),
                     ("Export VPD", "vpd"),
                     ("Export PMM", "pmm"),
                 ] {
                     if ui
                         .add_enabled(
-                            !self.models.is_empty() && (kind != "pmm" || self.project.is_some()),
+                            if kind == "scene-vmd" {
+                                self.scene.is_some() || self.vmd_scene.has_scene_tracks()
+                            } else {
+                                !self.models.is_empty() && (kind != "pmm" || self.project.is_some())
+                            },
                             egui::Button::new(label),
                         )
                         .clicked()
@@ -1008,6 +1056,15 @@ impl eframe::App for WebApp {
                     camera.light_direction = (-k.direction).normalize_or(Vec3::Y);
                 }
             }
+            if self.follow_camera {
+                if let Some(key) = self.vmd_scene.camera_at(self.frame) {
+                    camera.view_projection = crate::camera::projection(&key, size, None);
+                }
+            }
+            if let Some(key) = self.vmd_scene.light_at(self.frame) {
+                camera.light_color = key.color;
+                camera.light_direction = (-key.direction).normalize_or(Vec3::Y);
+            }
             self.renderer.draw_scene_camera(&refs, size, &camera);
             ui.painter().image(
                 self.renderer.texture_id,
@@ -1022,14 +1079,16 @@ impl eframe::App for WebApp {
             .unwrap_or_else(|| "\"Status unavailable\"".into());
         STATUS.with(|s| {
             *s.borrow_mut() = format!(
-                "{{\"models\":{},\"vertices\":{},\"assets\":{},\"frame\":{},\"status\":{escaped}}}",
+                "{{\"models\":{},\"vertices\":{},\"assets\":{},\"frame\":{},\"sceneCameraKeys\":{},\"sceneLightKeys\":{},\"status\":{escaped}}}",
                 self.models.len(),
                 self.models
                     .iter()
                     .map(|m| m.model.vertices.len())
                     .sum::<usize>(),
                 self.assets.len(),
-                self.frame
+                self.frame,
+                if self.vmd_scene.cameras.is_empty(){self.scene.as_ref().map_or(0,|s|s.camera.len())}else{self.vmd_scene.cameras.len()},
+                if self.vmd_scene.lights.is_empty(){self.scene.as_ref().map_or(0,|s|s.light.len())}else{self.vmd_scene.lights.len()}
             )
         });
     }

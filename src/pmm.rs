@@ -96,15 +96,22 @@ pub struct PmmSceneTracks {
     light_offsets: BTreeMap<u32, usize>,
 }
 impl PmmSceneTracks {
-    /// Interpolate camera-local values. Attached cameras still need their model/bone transform.
     pub fn camera_at(&self, frame: f32) -> Option<PmmCameraKey> {
+        PmmCameraKey::sample(&self.camera, frame)
+    }
+    pub fn light_at(&self, frame: f32) -> Option<PmmLightKey> {
+        PmmLightKey::sample(&self.light, frame)
+    }
+}
+impl PmmCameraKey {
+    pub fn sample(keys: &[Self], frame: f32) -> Option<Self> {
         let frame = if frame.is_finite() { frame.max(0.) } else { 0. };
-        let next = self.camera.partition_point(|key| key.frame as f32 <= frame);
+        let next = keys.partition_point(|key| key.frame as f32 <= frame);
         if next == 0 {
-            return self.camera.first().cloned();
+            return keys.first().cloned();
         }
-        let a = &self.camera[next - 1];
-        let Some(b) = self.camera.get(next) else {
+        let a = &keys[next - 1];
+        let Some(b) = keys.get(next) else {
             return Some(a.clone());
         };
         let t = ((frame - a.frame as f32) / (b.frame - a.frame) as f32).clamp(0., 1.);
@@ -118,14 +125,16 @@ impl PmmSceneTracks {
         out.fov = a.fov + (b.fov - a.fov) * ease(5);
         Some(out)
     }
-    pub fn light_at(&self, frame: f32) -> Option<PmmLightKey> {
+}
+impl PmmLightKey {
+    pub fn sample(keys: &[Self], frame: f32) -> Option<Self> {
         let frame = if frame.is_finite() { frame.max(0.) } else { 0. };
-        let next = self.light.partition_point(|key| key.frame as f32 <= frame);
+        let next = keys.partition_point(|key| key.frame as f32 <= frame);
         if next == 0 {
-            return self.light.first().cloned();
+            return keys.first().cloned();
         }
-        let a = &self.light[next - 1];
-        let Some(b) = self.light.get(next) else {
+        let a = &keys[next - 1];
+        let Some(b) = keys.get(next) else {
             return Some(a.clone());
         };
         let t = ((frame - a.frame as f32) / (b.frame - a.frame) as f32).clamp(0., 1.);
@@ -136,6 +145,7 @@ impl PmmSceneTracks {
         })
     }
 }
+
 fn read_camera(r: &mut Cursor<'_>, indexed: bool, version: u8) -> Result<Record<PmmCameraKey>> {
     let (frame, prev) = base(r, indexed)?;
     let offset = r.pos;
@@ -830,6 +840,7 @@ impl PmmProject {
     /// PMM requires a frame-zero key per track; omitted initial keys become identity/zero.
     /// Tracks with duplicate names can be retained unchanged but cannot be edited by name.
     pub fn set_motion(&mut self, model: usize, mut motion: Motion) -> Result<()> {
+        ensure!(motion.properties.is_empty() && motion.trailing_data.is_empty() && !motion.has_scene_tracks(),"PMM model writer accepts bone/morph tracks only; export VMD to retain unsupported tracks and extensions");
         let m = self
             .models
             .get(model)
@@ -1792,6 +1803,25 @@ mod tests {
             for (a, b) in shrunk.models.iter().zip(&project.models) {
                 assert!(same_motion(&a.motion, &b.motion));
             }
+        }
+    }
+    #[test]
+    fn unsupported_motion_sections_are_rejected_without_mutating_project() {
+        let mut project = PmmProject::parse(&fixture()).unwrap();
+        let original = project.to_bytes();
+        for mode in 0..3 {
+            let mut motion = project.models[0].motion.clone();
+            match mode {
+                0 => motion.cameras.push(PmmCameraKey::default()),
+                1 => motion.properties.push(crate::format::PropertyKey {
+                    frame: 0,
+                    visible: false,
+                    ik: BTreeMap::new(),
+                }),
+                _ => motion.trailing_data = b"extension".to_vec(),
+            }
+            assert!(project.set_motion(0, motion).is_err());
+            assert_eq!(project.to_bytes(), original);
         }
     }
 }
