@@ -427,14 +427,16 @@ impl Renderer {
                 pass.set_index_buffer(i.slice(..), wgpu::IndexFormat::Uint32);
                 let mut index = 0;
                 let mut offset = 0;
-                for &(model, _) in models {
+                for &(model, pose) in models {
                     for material in &model.materials {
                         pass.set_bind_group(1, &self.materials[index], &[]);
-                        pass.draw_indexed(
-                            offset + material.start..offset + material.start + material.count,
-                            0,
-                            0..1,
-                        );
+                        if pose.visible {
+                            pass.draw_indexed(
+                                offset + material.start..offset + material.start + material.count,
+                                0,
+                                0..1,
+                            );
+                        }
                         index += 1;
                     }
                     offset += model.indices.len() as u32;
@@ -493,43 +495,46 @@ mod tests {
             38.0,
             Vec3::new(0.0, 10.0, 0.0),
         );
-        let device = &renderer.state.device;
-        let buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size: 512 * 512 * 4,
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-            mapped_at_creation: false,
-        });
-        let mut encoder = device.create_command_encoder(&Default::default());
-        encoder.copy_texture_to_buffer(
-            wgpu::TexelCopyTextureInfo {
-                texture: &renderer.output,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            wgpu::TexelCopyBufferInfo {
-                buffer: &buffer,
-                layout: wgpu::TexelCopyBufferLayout {
-                    offset: 0,
-                    bytes_per_row: Some(512 * 4),
-                    rows_per_image: Some(512),
+        fn read_output(renderer: &Renderer) -> Vec<u8> {
+            let device = &renderer.state.device;
+            let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                label: None,
+                size: 512 * 512 * 4,
+                usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+                mapped_at_creation: false,
+            });
+            let mut encoder = device.create_command_encoder(&Default::default());
+            encoder.copy_texture_to_buffer(
+                wgpu::TexelCopyTextureInfo {
+                    texture: &renderer.output,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d::ZERO,
+                    aspect: wgpu::TextureAspect::All,
                 },
-            },
-            wgpu::Extent3d {
-                width: 512,
-                height: 512,
-                depth_or_array_layers: 1,
-            },
-        );
-        renderer.state.queue.submit(Some(encoder.finish()));
-        let (tx, rx) = mpsc::channel();
-        buffer
-            .slice(..)
-            .map_async(wgpu::MapMode::Read, move |result| tx.send(result).unwrap());
-        device.poll(wgpu::PollType::wait_indefinitely()).unwrap();
-        rx.recv().unwrap().unwrap();
-        let data = buffer.slice(..).get_mapped_range();
+                wgpu::TexelCopyBufferInfo {
+                    buffer: &buffer,
+                    layout: wgpu::TexelCopyBufferLayout {
+                        offset: 0,
+                        bytes_per_row: Some(512 * 4),
+                        rows_per_image: Some(512),
+                    },
+                },
+                wgpu::Extent3d {
+                    width: 512,
+                    height: 512,
+                    depth_or_array_layers: 1,
+                },
+            );
+            renderer.state.queue.submit(Some(encoder.finish()));
+            let (tx, rx) = mpsc::channel();
+            buffer
+                .slice(..)
+                .map_async(wgpu::MapMode::Read, move |result| tx.send(result).unwrap());
+            device.poll(wgpu::PollType::wait_indefinitely()).unwrap();
+            rx.recv().unwrap().unwrap();
+            buffer.slice(..).get_mapped_range().to_vec()
+        }
+        let data = read_output(&renderer);
         let background = data[..4].to_vec();
         let foreground = data
             .as_chunks::<4>()
@@ -549,5 +554,37 @@ mod tests {
             image::ColorType::Rgba8,
         )
         .unwrap();
+        let mut hidden = pose.clone();
+        hidden.visible = false;
+        renderer.draw_scene(
+            &[(&model, &hidden)],
+            [512, 512],
+            0.,
+            0.12,
+            38.,
+            Vec3::new(0., 10., 0.),
+        );
+        let hidden_output = read_output(&renderer);
+        assert!(
+            hidden_output
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .all(|pixel| pixel.as_slice() == background.as_slice()),
+            "hidden model still rendered"
+        );
+        // Keep material and index offsets for hidden models before visible models.
+        renderer
+            .load_scene(&[(&model, path), (&model, path)])
+            .unwrap();
+        renderer.draw_scene(
+            &[(&model, &hidden), (&model, &pose)],
+            [512, 512],
+            0.,
+            0.12,
+            38.,
+            Vec3::new(0., 10., 0.),
+        );
+        assert_eq!(read_output(&renderer), data);
     }
 }

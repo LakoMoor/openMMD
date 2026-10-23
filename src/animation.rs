@@ -64,6 +64,8 @@ pub struct Pose {
     pub translations: Vec<Vec3>,
     pub rotations: Vec<Quat>,
     pub morphs: Vec<f32>,
+    pub visible: bool,
+    pub ik_enabled: Vec<bool>,
 }
 impl Pose {
     pub fn sample(model: &Model, motion: &Motion, frame: f32) -> Self {
@@ -84,10 +86,35 @@ impl Pose {
                     .map_or(0.0, |k| sample_morph(k, frame))
             })
             .collect();
+        let frame = if frame.is_finite() {
+            frame.max(0.0)
+        } else {
+            0.0
+        };
+        let end = motion
+            .properties
+            .partition_point(|key| key.frame as f32 <= frame);
+        let visible = motion.properties[..end]
+            .last()
+            .is_none_or(|key| key.visible);
+        let ik_enabled = model
+            .ik
+            .iter()
+            .map(|ik| {
+                let name = &model.bones[ik.controller].name;
+                motion.properties[..end]
+                    .iter()
+                    .rev()
+                    .find_map(|key| key.ik.get(name).copied())
+                    .unwrap_or(true)
+            })
+            .collect();
         Self {
             translations,
             rotations,
             morphs,
+            visible,
+            ik_enabled,
         }
     }
     pub fn globals(&self, model: &Model) -> Vec<Mat4> {
@@ -123,7 +150,10 @@ impl Pose {
 
     /// PMD CCD IK. Knee constraints are approximated as a local X hinge.
     pub fn solve_ik(&mut self, model: &Model) {
-        for ik in &model.ik {
+        for (index, ik) in model.ik.iter().enumerate() {
+            if !self.ik_enabled[index] {
+                continue;
+            }
             let mut globals = self.globals(model);
             let goal = globals[ik.controller].transform_point3(Vec3::ZERO);
             for _ in 0..ik.iterations.min(256) {

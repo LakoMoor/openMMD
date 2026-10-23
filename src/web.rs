@@ -199,6 +199,7 @@ pub struct WebApp {
     vmd_scene: Motion,
     scene: Option<PmmSceneTracks>,
     pending_project: Option<String>,
+    inspector_open: bool,
     frame: f32,
     end: u32,
     playing: bool,
@@ -219,7 +220,7 @@ impl WebApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         cc.egui_ctx.set_visuals(egui::Visuals::dark());
         CONTEXT.with(|c| *c.borrow_mut() = Some(cc.egui_ctx.clone()));
-        Self {renderer:Renderer::new(cc.wgpu_render_state.clone().expect("wgpu backend required")),assets:HashMap::new(),models:Vec::new(),selected:0,bone:0,morph:0,project:None,vmd_scene:Motion::default(),scene:None,pending_project:None,frame:0.,end:300,playing:false,looping:true,last_time:None,yaw:0.,pitch:0.12,distance:45.,focus:Vec3::new(0.,10.,0.),ik:true,follow_camera:false,translation:Vec3::ZERO,rotation:Vec3::ZERO,morph_weight:0.,status:"Open local models, motions and textures together, or try the procedural demo. Files stay in this browser tab.".into()}
+        Self {renderer:Renderer::new(cc.wgpu_render_state.clone().expect("wgpu backend required")),assets:HashMap::new(),models:Vec::new(),selected:0,bone:0,morph:0,project:None,vmd_scene:Motion::default(),scene:None,pending_project:None,inspector_open:false,frame:0.,end:300,playing:false,looping:true,last_time:None,yaw:0.,pitch:0.12,distance:45.,focus:Vec3::new(0.,10.,0.),ik:true,follow_camera:false,translation:Vec3::ZERO,rotation:Vec3::ZERO,morph_weight:0.,status:"Open local models, motions and textures together, or try the procedural demo. Files stay in this browser tab.".into()}
     }
     fn report(&mut self, result: Result<()>) {
         if let Err(e) = result {
@@ -772,8 +773,27 @@ impl WebApp {
             for warning in self.renderer.warnings.iter().take(10){ui.small(warning);}
         });
     }
+    fn export_buttons(&mut self, ui: &mut egui::Ui) {
+        for (label, kind) in [
+            ("Export VMD", "vmd"),
+            ("Export scene VMD", "scene-vmd"),
+            ("Export VPD", "vpd"),
+            ("Export PMM", "pmm"),
+        ] {
+            let enabled = if kind == "scene-vmd" {
+                self.scene.is_some() || self.vmd_scene.has_scene_tracks()
+            } else {
+                !self.models.is_empty() && (kind != "pmm" || self.project.is_some())
+            };
+            if ui.add_enabled(enabled, egui::Button::new(label)).clicked() {
+                let result = self.export(kind);
+                self.report(result);
+            }
+        }
+    }
     fn timeline(&mut self, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
+        let compact = ui.available_width() < 700.;
+        ui.horizontal_wrapped(|ui| {
             if ui
                 .button(if self.playing { "Pause" } else { "Play" })
                 .clicked()
@@ -802,9 +822,11 @@ impl WebApp {
                 self.playing = false;
                 self.sync();
             }
-            ui.label("End");
-            ui.add(egui::DragValue::new(&mut self.end).range(1..=100_000));
-            ui.label("30 fps");
+            if !compact {
+                ui.label("End");
+                ui.add(egui::DragValue::new(&mut self.end).range(1..=100_000));
+                ui.label("30 fps");
+            }
         });
         if ui
             .add(egui::Slider::new(&mut self.frame, 0.0..=self.end as f32).show_value(false))
@@ -872,7 +894,11 @@ impl WebApp {
                 self.sync();
             }
         }
-        ui.small("Selected track keys: teal = bone · amber = morph. Click to scrub.");
+        ui.small(if ui.available_width() < 500. {
+            "Teal: bone · Amber: morph · Tap to scrub"
+        } else {
+            "Selected track keys: teal = bone · amber = morph. Click to scrub."
+        });
     }
 }
 impl eframe::App for WebApp {
@@ -919,52 +945,87 @@ impl eframe::App for WebApp {
                 }
             }
         }
+        let compact = root_ui.max_rect().width() < 700.;
+        root_ui.spacing_mut().interact_size.y = if compact { 34. } else { 18. };
+        if compact {
+            root_ui
+                .style_mut()
+                .text_styles
+                .insert(egui::TextStyle::Button, egui::FontId::proportional(14.));
+        }
         egui::Panel::top("web-toolbar").show(root_ui, |ui| {
             ui.horizontal_wrapped(|ui| {
-                ui.strong("openMMD / WEB");
-                if ui.button("Open local files…").clicked() {
+                if !compact {
+                    ui.strong("openMMD / WEB");
+                }
+                if ui
+                    .button(if compact {
+                        "Open files…"
+                    } else {
+                        "Open local files…"
+                    })
+                    .clicked()
+                {
                     Self::choose_files(ctx.clone());
                 }
-                if ui.button("Procedural demo").clicked() {
-                    let r = self.demo();
-                    self.report(r);
-                }
-                for (label, kind) in [
-                    ("Export VMD", "vmd"),
-                    ("Export scene VMD", "scene-vmd"),
-                    ("Export VPD", "vpd"),
-                    ("Export PMM", "pmm"),
-                ] {
-                    if ui
-                        .add_enabled(
-                            if kind == "scene-vmd" {
-                                self.scene.is_some() || self.vmd_scene.has_scene_tracks()
-                            } else {
-                                !self.models.is_empty() && (kind != "pmm" || self.project.is_some())
-                            },
-                            egui::Button::new(label),
-                        )
-                        .clicked()
-                    {
-                        let r = self.export(kind);
-                        self.report(r);
+                if compact {
+                    ui.toggle_value(&mut self.inspector_open, "Inspector");
+                    ui.menu_button("Tools", |ui| {
+                        if ui.button("Procedural demo").clicked() {
+                            let result = self.demo();
+                            self.report(result);
+                            ui.close();
+                        }
+                        ui.separator();
+                        self.export_buttons(ui);
+                        ui.separator();
+                        ui.hyperlink_to("Source ↗", "https://github.com/LakoMoor/openMMD");
+                    });
+                } else {
+                    if ui.button("Procedural demo").clicked() {
+                        let result = self.demo();
+                        self.report(result);
                     }
+                    self.export_buttons(ui);
+                    ui.hyperlink_to("Source ↗", "https://github.com/LakoMoor/openMMD");
                 }
-                ui.hyperlink_to("Source ↗", "https://github.com/LakoMoor/openMMD");
             });
         });
         egui::Panel::bottom("web-timeline").show(root_ui, |ui| {
             self.timeline(ui);
             ui.separator();
-            ui.small(&self.status);
+            ui.add(egui::Label::new(&self.status).truncate())
+                .on_hover_text(&self.status);
         });
-        egui::Panel::left("web-inspector")
-            .default_size(300.)
-            .size_range(210.0..=500.)
-            .resizable(true)
-            .show(root_ui, |ui| {
-                egui::ScrollArea::vertical().show(ui, |ui| self.controls(ui));
-            });
+        if !compact {
+            egui::Panel::left("web-inspector")
+                .default_size(300.)
+                .size_range(210.0..=500.)
+                .resizable(true)
+                .show(root_ui, |ui| {
+                    egui::ScrollArea::vertical().show(ui, |ui| self.controls(ui));
+                });
+        } else {
+            let mut open = self.inspector_open;
+            egui::Window::new("Inspector")
+                .open(&mut open)
+                .fixed_pos(egui::pos2(8., 50.))
+                .default_width((root_ui.max_rect().width() - 40.).clamp(200., 400.))
+                .max_height((root_ui.max_rect().height() - 170.).max(100.))
+                .resizable(false)
+                .collapsible(false)
+                .show(&ctx, |ui| {
+                    ui.spacing_mut().interact_size.y = 34.;
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label("Timeline end");
+                            ui.add(egui::DragValue::new(&mut self.end).range(1..=100_000));
+                        });
+                        self.controls(ui);
+                    });
+                });
+            self.inspector_open = open;
+        }
         egui::CentralPanel::default().show(root_ui, |ui| {
             let available = ui.available_size().max(egui::vec2(1., 1.));
             if self.models.is_empty() {
@@ -984,7 +1045,15 @@ impl eframe::App for WebApp {
                 return;
             }
             let (rect, response) = ui.allocate_exact_size(available, egui::Sense::drag());
-            if response.dragged() {
+            let gesture = ctx.input(|i| i.multi_touch());
+            if let Some(touch) = gesture.filter(|touch| {
+                rect.contains(touch.start_pos)
+                    && ctx.layer_id_at(touch.start_pos) == Some(response.layer_id)
+            }) {
+                self.distance = (self.distance / touch.zoom_delta.max(0.01)).clamp(3., 500.);
+                self.follow_camera = false;
+            }
+            if response.dragged() && gesture.is_none() {
                 let delta = ctx.input(|i| i.pointer.delta());
                 self.yaw -= delta.x * 0.008;
                 self.pitch = (self.pitch + delta.y * 0.008).clamp(-1.5, 1.5);
@@ -1079,7 +1148,7 @@ impl eframe::App for WebApp {
             .unwrap_or_else(|| "\"Status unavailable\"".into());
         STATUS.with(|s| {
             *s.borrow_mut() = format!(
-                "{{\"models\":{},\"vertices\":{},\"assets\":{},\"frame\":{},\"sceneCameraKeys\":{},\"sceneLightKeys\":{},\"status\":{escaped}}}",
+                "{{\"models\":{},\"vertices\":{},\"assets\":{},\"frame\":{},\"sceneCameraKeys\":{},\"sceneLightKeys\":{},\"compactLayout\":{compact},\"inspectorOpen\":{},\"orbitDistance\":{},\"status\":{escaped}}}",
                 self.models.len(),
                 self.models
                     .iter()
@@ -1088,7 +1157,9 @@ impl eframe::App for WebApp {
                 self.assets.len(),
                 self.frame,
                 if self.vmd_scene.cameras.is_empty(){self.scene.as_ref().map_or(0,|s|s.camera.len())}else{self.vmd_scene.cameras.len()},
-                if self.vmd_scene.lights.is_empty(){self.scene.as_ref().map_or(0,|s|s.light.len())}else{self.vmd_scene.lights.len()}
+                if self.vmd_scene.lights.is_empty(){self.scene.as_ref().map_or(0,|s|s.light.len())}else{self.vmd_scene.lights.len()},
+                self.inspector_open,
+                self.distance
             )
         });
     }

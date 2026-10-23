@@ -3,85 +3,73 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101b1c">
-  <meta name="description" content="openMMD is an early, independent MMD-compatible animation editor built with Rust and wgpu. Explore its current capabilities, limitations and source.">
-  <meta property="og:title" content="openMMD — A new stage for MMD">
-  <meta property="og:description" content="An independent Rust editor for desktop and the browser. Open source. Work in progress.">
-  <meta property="og:image" content="https://lakomoor.github.io/openMMD/assets/editor.png">
+  <meta name="theme-color" content="#0b1417">
+  <meta name="description" content="An independent, open-source MMD animation editor built with Rust and wgpu. Try the browser editor, explore desktop builds, and check format compatibility.">
+  <meta property="og:title" content="openMMD — Your next MMD scene">
+  <meta property="og:description" content="Familiar models. A new stage. An open-source editor for desktop and the browser, in active development.">
+  <meta property="og:image" content="https://lakomoor.github.io/openMMD/assets/web.png">
   <meta property="og:type" content="website">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23101b1c'/%3E%3Cpath d='M13 44V21h9l10 13 10-13h9v23h-9V33L32 46 22 33v11z' fill='%2361d4bc'/%3E%3C/svg%3E">
-  <title>openMMD — A new stage for MMD</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b1417'/%3E%3Cpath d='M13 44V21h9l10 13 10-13h9v23h-9V33L32 46 22 33v11z' fill='%2384ebcd'/%3E%3C/svg%3E">
+  <title>openMMD — Your next MMD scene</title>
   <link rel="stylesheet" href="style.css">
   <script src="app.js" defer></script>
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
-  <header class="header wrap">
-    <a class="wordmark" href="#" aria-label="openMMD home"><span class="mark" aria-hidden="true">m</span>open<span>MMD</span></a>
-    <nav aria-label="Main navigation"><a href="app/">Web editor</a><a href="#compatibility">Compatibility</a><a href="#get-started">Get started</a><a href="https://github.com/LakoMoor/openMMD" class="source-link">GitHub <span aria-hidden="true">↗</span></a></nav>
+  <header class="header">
+    <div class="wrap header-inner">
+      <a class="wordmark" href="#" aria-label="openMMD home"><span class="mark" aria-hidden="true">m</span>open<strong>MMD</strong><span class="alpha">EARLY ACCESS</span></a>
+      <button class="menu-toggle" aria-expanded="false" aria-controls="main-nav" type="button">Menu <span aria-hidden="true">☰</span></button>
+      <nav id="main-nav" aria-label="Main navigation"><a href="#workspace">Workspace</a><a href="#compatibility">Compatibility</a><a href="#get-started">Desktop setup</a><a href="https://github.com/LakoMoor/openMMD">GitHub ↗</a><a class="nav-launch" href="app/">Open editor <span aria-hidden="true">↗</span></a></nav>
+    </div>
   </header>
   <main id="main">
     <section class="hero wrap" aria-labelledby="hero-title">
-      <div class="hero-top"><p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> Independent animation editor / Early development</p><span class="build-label">RUST + WGPU</span></div>
-      <h1 id="hero-title">A new stage<br>for <span>MMD.</span></h1>
-      <div class="hero-bottom"><p>Familiar models. A new foundation.<br>An MMD-compatible editor being built in Rust,<br class="desktop-break"> with a GPU viewport powered by wgpu.</p><div class="hero-actions"><a class="button primary" href="app/">Open web editor <span aria-hidden="true">↘</span></a><a class="text-link" href="https://github.com/LakoMoor/openMMD">Explore the code <span aria-hidden="true">↗</span></a></div></div>
-      <div class="platform-line"><span>Development tested on macOS</span><span>Windows + Linux: CI builds / runtime unverified</span><span class="version-note">EARLY EDITOR · NOT A COMPLETE MMD PORT</span></div>
-    </section>
-
-    <section class="viewport-section wrap" aria-labelledby="viewport-title">
-      <div class="section-label"><span id="viewport-title">01 / THE WORKSPACE</span><span>Actual application capture</span></div>
-      <a class="shot-main screenshot" href="assets/editor.png" data-caption="openMMD workspace — actual application screenshot" aria-label="Enlarge the openMMD workspace screenshot"><div class="window-bar" aria-hidden="true"><span class="window-dots"><i></i><i></i><i></i></span><span>openMMD / editor</span><span>↗</span></div><img src="assets/editor.png" alt="openMMD desktop editor with the 3D viewport, model controls and animation timeline" width="1440" height="900" fetchpriority="high"></a>
-      <div class="image-caption"><p>A working editor, with the details still in motion.</p><span>Click any screenshot to inspect it at full size.</span></div>
-    </section>
-
-    <section class="workflow wrap" aria-labelledby="workflow-title">
-      <div class="section-intro"><p class="eyebrow">02 / FROM MODEL TO MOTION</p><h2 id="workflow-title">Keep the creative workflow.<br>Rebuild the machinery.</h2></div>
-      <div class="workflow-grid">
-        <article><span class="step">01</span><h3>Bring a model.</h3><p>Load PMD models or the supported subset of PMX. Inspect a textured mesh, its skeleton and vertex morphs in the GPU viewport.</p><a href="#compatibility">Check format support <span aria-hidden="true">↓</span></a></article>
-        <article><span class="step">02</span><h3>Find the pose.</h3><p>Adjust bone transforms and facial morphs. Import a VPD pose, use it as a starting point, or export a pose to share with an existing workflow.</p><a href="https://github.com/LakoMoor/openMMD/blob/main/docs/vpd.md">VPD implementation notes <span aria-hidden="true">↗</span></a></article>
-        <article><span class="step">03</span><h3>Shape the timing.</h3><p>Play VMD motion, edit bone and morph keyframes on the timeline, and use undo and redo while refining the animation.</p><a href="https://github.com/LakoMoor/openMMD#readme">Read the project guide <span aria-hidden="true">↗</span></a></article>
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> OPEN SOURCE. OPEN STAGE.</p>
+        <h1 id="hero-title">Your next<br><span>MMD scene.</span></h1>
+        <p class="hero-description">Bring the characters you know.<br>Make room for what comes next.</p>
+        <p class="hero-detail">An independent MMD-compatible animation editor, rebuilt with Rust and wgpu for desktop and the browser.</p>
+        <div class="hero-actions"><a class="button primary" href="app/">Launch web editor <span aria-hidden="true">↗</span></a><a class="text-link" href="#workspace">Explore the workspace <span aria-hidden="true">↓</span></a></div>
+        <p class="hero-note">No installation · Local files · WebGPU required</p>
       </div>
+      <figure class="hero-stage">
+        <div class="stage-top"><span><i class="status-dot" aria-hidden="true"></i> RENDER CAPTURE / EARLY BUILD</span><span>01 — MIKU</span></div>
+        <a class="screenshot" href="assets/miku.png" data-caption="Actual wgpu render from openMMD. Model shown for demonstration; model assets are not bundled." aria-label="View the actual openMMD render"><img src="assets/miku.png" alt="Miku rendered by openMMD's Rust and wgpu renderer" width="1200" height="900" fetchpriority="high"></a>
+        <figcaption><span>Familiar model.<br><strong>A new foundation.</strong></span><a href="app/" aria-label="Try openMMD Web">↗</a></figcaption>
+      </figure>
+    </section>
+    <div class="platforms wrap"><p>ONE RUST FOUNDATION</p><div><span>macOS</span><span>Windows</span><span>Linux</span><span>WebAssembly</span></div><a href="#compatibility">See what works <span aria-hidden="true">↘</span></a></div>
+
+    <section class="workspace wrap" id="workspace" aria-labelledby="workspace-title">
+      <div class="section-heading"><div><p class="eyebrow">01 / YOUR WORKSPACE</p><h2 id="workspace-title">From a first pose<br>to the next frame.</h2></div><p>A textured viewport, bone and morph controls, and an animation timeline. Familiar tools, with a foundation built in the open.</p></div>
+      <div class="preview-selector" role="group" aria-label="Choose workspace screenshot"><button type="button" data-preview="browser" aria-pressed="true">Browser editor <span>WASM / WebGPU</span></button><button type="button" data-preview="desktop" aria-pressed="false">Desktop editor <span>Rust / wgpu</span></button><button type="button" data-preview="mobile" aria-pressed="false">Mobile layout <span>Touch controls</span></button><span class="capture-label">ACTUAL APPLICATION CAPTURES</span></div>
+      <figure class="workspace-capture" data-capture="browser"><a class="screenshot shot-main" href="assets/web.png" data-caption="openMMD Web with a locally loaded model and VMD scene camera and light tracks" aria-label="Enlarge the browser editor screenshot"><div class="window-bar" aria-hidden="true"><span class="window-dots"><i></i><i></i><i></i></span><span>openMMD / web workspace</span><span>↗</span></div><img src="assets/web.png" alt="Browser editor with a Miku model, bone and morph controls, and VMD playback" width="1440" height="1000" loading="lazy"></a><figcaption><span>Runs in your browser. Your model files stay in this tab.</span><a href="app/">Try it yourself ↗</a></figcaption></figure>
+      <figure class="workspace-capture" data-capture="desktop"><a class="screenshot shot-main" href="assets/editor.png" data-caption="The native openMMD desktop editor running on macOS" aria-label="Enlarge the desktop editor screenshot"><div class="window-bar" aria-hidden="true"><span class="window-dots"><i></i><i></i><i></i></span><span>openMMD / desktop workspace</span><span>↗</span></div><img src="assets/editor.png" alt="Native openMMD editor with model controls and a keyframe timeline" width="1440" height="900" loading="lazy"></a><figcaption><span>Native application. Build from source on your platform.</span><a href="#get-started">Desktop setup ↓</a></figcaption></figure>
+      <figure class="workspace-capture" data-capture="mobile"><a class="screenshot phone-capture" href="assets/web-mobile.png" data-caption="The responsive browser editor at 390 CSS pixels, with a locally loaded model. WebGPU availability depends on the device and browser." aria-label="Enlarge the mobile editor screenshot"><img src="assets/web-mobile.png" alt="Portrait openMMD editor with a full-width viewport and compact touch controls" width="390" height="844" loading="lazy"></a><figcaption><span>A full-width stage. Open Inspector for bones and morphs; Tools for exports.</span><a href="app/">Open the editor ↗</a></figcaption></figure>
+      <div class="workflow-grid"><article><span class="step">01 / IMPORT</span><h3>Bring your model.</h3><p>Open PMD or the supported PMX subset with its textures. Try the procedural demo if you just want to look around.</p></article><article><span class="step">02 / POSE</span><h3>Find the expression.</h3><p>Move bones, adjust facial morphs, and bring in a VPD pose. Undo and redo as you work.</p></article><article><span class="step">03 / ANIMATE</span><h3>Make it move.</h3><p>Play VMD motion, edit bone and morph keys, and follow animated camera and light tracks.</p></article></div>
     </section>
 
-    <section class="model-section" aria-labelledby="model-title"><div class="wrap model-grid">
-      <div class="model-copy"><p class="eyebrow">03 / BUILT IN THE OPEN</p><h2 id="model-title">The model is familiar.<br>The renderer is new.</h2><p>A Rust application with an immediate-mode editor and a wgpu rendering backend. The aim is a maintainable foundation for MMD workflows across desktop platforms.</p><p class="muted">The current renderer is intentionally basic. MMD’s full shading, physics, accessories and complete scene behavior are still ahead.</p><a class="text-link" href="https://github.com/LakoMoor/openMMD/tree/main/src">Look inside the implementation <span aria-hidden="true">↗</span></a></div>
-      <figure><a class="screenshot model-shot" href="assets/miku.png" data-caption="Miku model rendered by openMMD's wgpu renderer" aria-label="Enlarge the Miku renderer screenshot"><img src="assets/miku.png" alt="Miku model rendered in openMMD using the wgpu graphics backend" width="1200" height="900" loading="lazy"></a><figcaption><span>WGPU RENDER CAPTURE</span><span>Original model asset, independent renderer</span></figcaption></figure>
-    </div></section>
-
-    <section class="scene-section wrap" aria-labelledby="scene-title">
-      <div><p class="eyebrow">PROJECT TRACKS / IN PROGRESS</p><h2 id="scene-title">Put the scene<br>in motion.</h2><p>Follow PMM or VMD camera and light tracks. Load a camera-only VMD before choosing a model, or export scene motion separately. PMM camera/light keys can also be edited in the desktop interface.</p><p class="scene-note">Camera transforms are approximate. Original MMD runtime equivalence has not yet been verified.</p></div>
-      <figure><a class="screenshot scene-shot" href="assets/scene.png" data-caption="PMM scene in openMMD — camera and light track controls" aria-label="Enlarge the PMM scene screenshot"><img src="assets/scene.png" alt="openMMD displaying an imported PMM scene with camera and light animation controls" width="1440" height="900" loading="lazy"></a><figcaption>PMM SCENE / ACTUAL APPLICATION CAPTURE</figcaption></figure>
-    </section>
-
-    <section class="workflow wrap" id="web-editor" aria-labelledby="web-title">
-      <div class="section-intro"><p class="eyebrow">RUN IT IN YOUR BROWSER</p><h2 id="web-title">No install.<br>Your files, your stage.</h2></div>
-      <div class="workflow-grid"><article><span class="step">WASM</span><h3>The same Rust foundation.</h3><p>A WebAssembly build with the shared PMD, PMX, VMD, VPD and PMM parsers, animation code and wgpu renderer. A browser editor, not a video or screenshot.</p></article><article><span class="step">LOCAL</span><h3>Bring the assets.</h3><p>Select your model and its textures together. For a PMM project, include the referenced models. Files are processed locally in browser memory.</p></article><article><span class="step">WEBGPU</span><h3>A modern browser.</h3><p>Use recent Chrome or Edge with WebGPU and hardware acceleration. This remains an early editor with the limitations listed below.</p><a class="button primary" href="app/">Launch openMMD Web <span aria-hidden="true">↗</span></a></article></div>
-    </section>
-
-    <section class="viewport-section wrap" aria-labelledby="web-capture-title">
-      <div class="section-label"><span id="web-capture-title">WEB / ACTUAL BROWSER CAPTURE</span><a href="app/">Open the browser editor ↗</a></div>
-      <a class="shot-main screenshot" href="assets/web.png" data-caption="The Rust/WASM editor running in Chrome WebGPU with a locally selected model" aria-label="Enlarge the browser editor screenshot"><img src="assets/web.png" alt="openMMD Web running a locally loaded Miku model with bone controls and timeline" width="1440" height="1000" loading="lazy"></a>
-      <p class="compatibility-footnote">The original models are not hosted here. Select your own files, or use the built-in procedural demo.</p>
-    </section>
+    <section class="scene-section" aria-labelledby="scene-title"><div class="wrap scene-grid"><div class="scene-copy"><p class="eyebrow">02 / MORE THAN A MODEL</p><h2 id="scene-title">Give the scene<br>a point of view.</h2><p>Import camera and light VMDs, even before loading a model. Follow the shot, play visibility and IK switches, and export scene motion separately.</p><p class="muted">PMM v1/v2 projects support a growing set of editing features, including desktop camera and light keys. Compatibility remains partial.</p><a class="text-link" href="https://github.com/LakoMoor/openMMD/blob/main/docs/pmm.md">Explore PMM support <span aria-hidden="true">↗</span></a></div><figure><a class="screenshot" href="assets/scene.png" data-caption="PMM scene in openMMD with camera and light key controls" aria-label="Enlarge the PMM scene screenshot"><img src="assets/scene.png" alt="A PMM scene playing in openMMD with camera and lighting controls" width="1440" height="900" loading="lazy"></a><figcaption>PMM SCENE / NATIVE APPLICATION CAPTURE</figcaption></figure></div></section>
 
     <section class="compatibility wrap" id="compatibility" aria-labelledby="compatibility-title">
-      <div class="section-intro split-intro"><div><p class="eyebrow">04 / COMPATIBILITY, CLEARLY</p><h2 id="compatibility-title">A useful start.<br>An honest status.</h2></div><p>This is an early implementation, not a complete replacement for MikuMikuDance. A file loading successfully does not guarantee identical playback or appearance.</p></div>
-      <div class="table-scroll"><table><caption class="sr-only">Current file format support and known limitations</caption><thead><tr><th scope="col">Format / system</th><th scope="col">Current support</th><th scope="col">The important limits</th></tr></thead><tbody>
-        <tr><th scope="row"><span class="format">PMD</span><span class="format-note">Model</span></th><td><span class="state">Implemented subset</span><p>Mesh, diffuse textures, bones, vertex morphs and basic IK.</p></td><td>Basic shading and approximate IK. No rigid-body physics or complete MMD material behavior.</td></tr>
-        <tr><th scope="row"><span class="format">PMX 2.0 / 2.1</span><span class="format-note">Model</span></th><td><span class="state partial">Partial</span><p>Mesh, four bone influences, skeleton, vertex morphs and diffuse materials.</p></td><td>SDEF/QDEF use linear skinning. Other morph types and advanced bone behavior are not evaluated. Soft bodies are rejected. <a href="https://github.com/LakoMoor/openMMD/blob/main/docs/pmx.md">Details ↗</a></td></tr>
-        <tr><th scope="row"><span class="format">VMD / VPD</span><span class="format-note">Motion / pose</span></th><td><span class="state">Motion + scene tracks</span><p>Bone/morph animation, VMD camera/light playback and VPD pose import/export.</p></td><td>Camera-only VMD works without a model. Shadow, visibility and IK-switch tracks are retained on export but not evaluated yet. <a href="https://github.com/LakoMoor/openMMD/blob/main/docs/vmd.md">VMD details ↗</a></td></tr>
-        <tr><th scope="row"><span class="format">PMM v1 / v2</span><span class="format-note">Project</span></th><td><span class="state partial">Partial project editing</span><p>Bone/morph tracks, camera/light playback and keyframe editing.</p></td><td>Camera transforms are approximate; original runtime equivalence is unverified. Accessories, physics, shadows and all original editor settings are not supported. Preserve the original project.</td></tr>
-        <tr><th scope="row"><span class="format">WebGPU / WASM</span><span class="format-note">Browser editor</span></th><td><span class="state">Working browser build</span><p>Local files, shared Rust rendering and animation, key editing and exports.</p></td><td>Recent Chrome/Edge and hardware acceleration required. Files stay in tab memory. PMM camera/light key editing and advanced curve operations remain desktop-only.</td></tr>
-        <tr><th scope="row"><span class="format">Desktop platforms</span><span class="format-note">Build + runtime</span></th><td><span class="state">macOS development</span><p>Rust + wgpu foundations for macOS, Windows and Linux.</p></td><td>CI builds and ordinary tests run on macOS, Windows and Linux. Desktop GPU playback has only been verified on macOS.</td></tr>
-      </tbody></table></div>
-      <p class="compatibility-footnote">Compatibility grows through reproducible tests and real assets. <a href="https://github.com/LakoMoor/openMMD/issues">Report a concrete mismatch <span aria-hidden="true">↗</span></a></p>
+      <div class="section-heading"><div><p class="eyebrow">03 / PROJECT STATUS</p><h2 id="compatibility-title">Know your tools.<br>Know their limits.</h2></div><p>This is an early editor. Full MMD shading, physics, accessories and complete PMM behavior are still in development.</p></div>
+      <table><caption class="sr-only">Current file format support and limitations</caption><thead><tr><th scope="col">Format / system</th><th scope="col">Working today</th><th scope="col">Still ahead</th></tr></thead><tbody>
+        <tr><th scope="row"><span class="format">PMD</span><span class="format-note">Model</span></th><td><span class="state">Implemented subset</span><p>Mesh, diffuse textures, bones, vertex morphs and basic IK.</p></td><td>Rigid-body physics, complete materials and exact MMD IK behavior.</td></tr>
+        <tr><th scope="row"><span class="format">PMX 2.0 / 2.1</span><span class="format-note">Model</span></th><td><span class="state partial">Partial</span><p>Mesh, four bone influences, skeleton, vertex morphs and diffuse materials.</p></td><td>SDEF/QDEF use linear skinning. Advanced morphs and bone behavior are not evaluated; soft bodies are rejected. <a href="https://github.com/LakoMoor/openMMD/blob/main/docs/pmx.md">Details ↗</a></td></tr>
+        <tr><th scope="row"><span class="format">VMD / VPD</span><span class="format-note">Motion / pose</span></th><td><span class="state">Motion + scene tracks</span><p>Bone/morph motion, camera/light playback, visibility and IK switches. VPD import/export.</p></td><td>Self-shadow keys are preserved but not rendered. Camera transforms and IK are approximate. <a href="https://github.com/LakoMoor/openMMD/blob/main/docs/vmd.md">Details ↗</a></td></tr>
+        <tr><th scope="row"><span class="format">PMM v1 / v2</span><span class="format-note">Project</span></th><td><span class="state partial">Partial editing</span><p>Bone/morph tracks, camera/light playback and key editing.</p></td><td>Accessories, physics, shadows and full editor settings. Camera equivalence with MMD is unverified. Keep original projects.</td></tr>
+        <tr><th scope="row"><span class="format">WebGPU / WASM</span><span class="format-note">Browser</span></th><td><span class="state">Working browser build</span><p>Local files, shared rendering and animation, key editing and exports.</p></td><td>A WebGPU-capable browser is required. Advanced curves and PMM camera/light key editing remain desktop-only. Mobile GPU support depends on the browser and device.</td></tr>
+        <tr><th scope="row"><span class="format">macOS / Windows / Linux</span><span class="format-note">Desktop</span></th><td><span class="state">CI on all three</span><p>Builds and ordinary tests run on all three platforms.</p></td><td>Desktop GPU playback is currently verified on macOS. Windows and Linux runtime testing remains ahead.</td></tr>
+      </tbody></table>
+      <p class="compatibility-footnote">Have a reproducible mismatch? <a href="https://github.com/LakoMoor/openMMD/issues">Help improve compatibility ↗</a></p>
     </section>
 
-    <section class="get-started wrap" id="get-started" aria-labelledby="start-title"><div class="start-copy"><p class="eyebrow">05 / TAKE IT FOR A SPIN</p><h2 id="start-title">Start with the source.</h2><p>Install the Rust toolchain and the platform dependencies described in the README. Clone the repository, then launch a release build.</p><a class="button primary" href="https://github.com/LakoMoor/openMMD#readme">Read setup instructions <span aria-hidden="true">↗</span></a></div><div class="terminal"><div class="terminal-label"><span>TERMINAL</span><button class="copy-button" type="button" data-copy aria-label="Copy setup commands">Copy <span aria-hidden="true">⧉</span></button></div><pre><code id="setup-commands">git clone https://github.com/LakoMoor/openMMD.git
+    <section class="start-section wrap" id="get-started" aria-labelledby="start-title"><div class="start-copy"><p class="eyebrow">04 / CHOOSE YOUR STAGE</p><h2 id="start-title">Open a tab.<br>Or build your own.</h2><p>Try the browser editor with local files, or build the native application with the Rust toolchain.</p><a class="button primary" href="app/">Open web editor <span aria-hidden="true">↗</span></a><p class="small-note">No original models are hosted. Use your own assets or the procedural demo.</p></div><div class="desktop-setup"><div class="terminal"><div class="terminal-label"><span>DESKTOP / BUILD FROM SOURCE</span><button class="copy-button" type="button" data-copy aria-label="Copy setup commands">Copy ⧉</button></div><pre><code id="setup-commands">git clone https://github.com/LakoMoor/openMMD.git
 cd openMMD
-cargo run --release</code></pre><p>Builds locally. No prebuilt download is promised.</p><span class="copy-status" role="status" aria-live="polite"></span></div></section>
+cargo run --release</code></pre><span class="copy-status" role="status" aria-live="polite"></span></div><a class="setup-link" href="https://github.com/LakoMoor/openMMD#readme">Platform dependencies &amp; setup guide <span aria-hidden="true">↗</span></a><p class="small-note">Requires the Rust toolchain. Prebuilt downloads are not available yet.</p></div></section>
   </main>
-  <footer class="footer wrap"><div><a class="wordmark" href="#">open<span>MMD</span></a><p>An independent implementation.<br>Not affiliated with the original MikuMikuDance project.<br>Sample models pictured belong to their respective owners; model assets are not bundled.</p></div><div class="footer-right"><a href="https://github.com/LakoMoor/openMMD">Source code ↗</a><a href="https://github.com/LakoMoor/openMMD/issues">Issues ↗</a><span>RUST / WGPU / WORK IN PROGRESS</span></div></footer>
+  <footer class="footer wrap"><div><a class="wordmark" href="#">open<strong>MMD</strong><span class="status-dot" aria-hidden="true"></span></a><p>An independent implementation, in active development.<br>Not affiliated with the original MikuMikuDance project.</p><p class="small-note">Pictured models belong to their respective owners. Model assets are not bundled.</p></div><div class="footer-right"><a href="https://github.com/LakoMoor/openMMD">Source code ↗</a><a href="https://github.com/LakoMoor/openMMD/issues">Report an issue ↗</a><span>RUST + WGPU<br>MADE TO KEEP MOVING.</span></div></footer>
   <dialog class="lightbox" aria-labelledby="lightbox-caption"><button class="lightbox-close" type="button" aria-label="Close screenshot">Close <span aria-hidden="true">×</span></button><img alt=""><p id="lightbox-caption"></p></dialog>
 </body>
 </html>

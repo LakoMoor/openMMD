@@ -48,3 +48,32 @@ if (!navigator.clipboard) {
     timeout = setTimeout(() => { copyStatus.textContent = ''; }, 5000);
   });
 }
+
+// Without JavaScript the navigation and both screenshots remain available.
+document.documentElement.classList.add('js');
+const menuToggle = document.querySelector('.menu-toggle');
+const navigation = document.querySelector('#main-nav');
+function closeMenu() {
+  navigation.classList.remove('is-open');
+  menuToggle.setAttribute('aria-expanded', 'false');
+}
+menuToggle.addEventListener('click', () => {
+  const open = menuToggle.getAttribute('aria-expanded') !== 'true';
+  navigation.classList.toggle('is-open', open);
+  menuToggle.setAttribute('aria-expanded', String(open));
+});
+navigation.querySelectorAll('a').forEach(link => link.addEventListener('click', closeMenu));
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && menuToggle.getAttribute('aria-expanded') === 'true') {
+    closeMenu();
+    menuToggle.focus();
+  }
+});
+matchMedia('(min-width: 761px)').addEventListener('change', closeMenu);
+const previewButtons = document.querySelectorAll('[data-preview]');
+function selectPreview(name) {
+  previewButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.preview === name)));
+  document.querySelectorAll('[data-capture]').forEach(capture => { capture.hidden = capture.dataset.capture !== name; });
+}
+previewButtons.forEach(button => button.addEventListener('click', () => selectPreview(button.dataset.preview)));
+selectPreview('browser');

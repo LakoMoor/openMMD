@@ -163,3 +163,97 @@ fn separate_light_import_retains_camera_and_conflicting_extensions_fail_atomical
     assert!(cameras.merged_scene(&lights).is_err());
     assert_eq!(cameras.trailing_data, b"vendor-A");
 }
+
+fn switched_rig() -> openmmd::format::Model {
+    use openmmd::format::{Bone, Ik, Model};
+    let mut bones = Vec::new();
+    let mut chains = Vec::new();
+    for (name, x) in [("left IK", 0.), ("right IK", 3.)] {
+        let i = bones.len();
+        bones.extend([
+            Bone {
+                name: format!("link {name}"),
+                parent: None,
+                position: Vec3::new(x, 0., 0.),
+            },
+            Bone {
+                name: format!("target {name}"),
+                parent: Some(i),
+                position: Vec3::new(x + 1., 0., 0.),
+            },
+            Bone {
+                name: name.into(),
+                parent: None,
+                position: Vec3::new(x, 1., 0.),
+            },
+        ]);
+        chains.push(Ik {
+            controller: i + 2,
+            target: i + 1,
+            iterations: 8,
+            angle: 1.,
+            links: vec![i],
+        });
+    }
+    Model {
+        name: "switch rig".into(),
+        comment: String::new(),
+        vertices: vec![],
+        indices: vec![],
+        materials: vec![],
+        bones,
+        ik: chains,
+        morphs: vec![],
+    }
+}
+
+#[test]
+fn visibility_and_sparse_ik_switches_hold_and_rewind_independently() {
+    use openmmd::{animation::Pose, format::PropertyKey};
+    let model = switched_rig();
+    let motion = Motion {
+        properties: vec![
+            PropertyKey {
+                frame: 10,
+                visible: false,
+                ik: [("left IK".into(), false)].into(),
+            },
+            PropertyKey {
+                frame: 20,
+                visible: true,
+                ik: [("right IK".into(), false)].into(),
+            },
+            PropertyKey {
+                frame: 30,
+                visible: false,
+                ik: [("left IK".into(), true)].into(),
+            },
+        ],
+        ..Default::default()
+    };
+    let motion = Motion::parse(&motion.to_vmd().unwrap()).unwrap();
+    for (frame, visible, enabled) in [
+        (0., true, [true, true]),
+        (9.9, true, [true, true]),
+        (10., false, [false, true]),
+        (19.9, false, [false, true]),
+        (20., true, [false, false]),
+        (99., false, [true, false]),
+        (5., true, [true, true]),
+        (15., false, [false, true]),
+    ] {
+        let pose = Pose::sample(&model, &motion, frame);
+        assert_eq!(pose.visible, visible, "frame {frame}");
+        assert_eq!(pose.ik_enabled, enabled, "frame {frame}");
+    }
+    let mut pose = Pose::sample(&model, &motion, 15.);
+    pose.solve_ik(&model);
+    assert_eq!(pose.rotations[0], glam::Quat::IDENTITY);
+    assert!(pose.rotations[3].angle_between(glam::Quat::IDENTITY) > 1.);
+    // Hidden models still evaluate their bones for attached cameras and later visibility keys.
+    assert!(!pose.visible);
+    let mut pose = Pose::sample(&model, &motion, 20.);
+    let original = pose.rotations.clone();
+    pose.solve_ik(&model);
+    assert_eq!(pose.rotations, original);
+}
