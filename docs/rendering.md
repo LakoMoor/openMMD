@@ -32,8 +32,8 @@ not a claim that every native MMD shader branch has been reproduced.
 
 ## Remaining differences
 
-No self-shadow/ground-shadow map, inverted-hull outline, material morphs or
-MME effects are rendered yet. Edge and double-sided parameters are retained;
+No self-shadow/ground-shadow map, material morphs or MME effects are rendered yet.
+Double-sided parameters are retained;
 all surfaces currently use the existing two-sided pipeline. PMX sphere mode 3
 requires extra UV channels: it is explicitly warned about and not rendered.
 Transparent-material sorting, precise alpha/depth behavior and all material
@@ -53,3 +53,22 @@ for disabled/multiply/add sphere modes and a toon texture. It also checks hidden
 models and material offsets in a two-model scene. The Miku/WAVEFILE set was loaded
 with its camera and motion and rendered on macOS; no original Windows MMD frame
 comparison has been performed.
+
+## Outline pass
+
+PMD per-vertex edge-disable flags and PMX per-vertex edge multipliers are now
+retained. The separate inverted-hull pass uses skinned normals, front-face
+culling, the scene depth buffer and four-sample MSAA. Material edge color,
+alpha, enable flag and size control the pass; texture and material alpha also
+suppress transparent outlines. Zero vertex multipliers suppress the outline.
+
+Width currently means viewport pixels: material size 1 with vertex multiplier 1
+expands one pixel along the projected normal. This is an explicit approximation,
+not the recovered MMD 9.32 edge-width formula. Perspective/orthographic projection,
+viewport scaling and the original edge render state still need comparison with
+Windows MMD. Ordinary mesh culling/normal handling remains unchanged in this pass.
+
+The parser field layout was cross-checked against the independent
+[mmd-parser implementation](https://github.com/takahirox/mmd-parser/blob/master/src/Parser.ts).
+GPU regression probes verify colored silhouette coverage, zero vertex scale and
+material disabling, in addition to the existing material and hidden-model checks.

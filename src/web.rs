@@ -1271,6 +1271,7 @@ fn demo_model() -> (Model, Motion) {
                     uv: Vec2::new((a + 1.) / 2., (b + 1.) / 2.),
                     bones: [bone, 0, 0, 0],
                     weights: [1., 0., 0., 0.],
+                    edge_scale: 1.,
                 });
             }
             model

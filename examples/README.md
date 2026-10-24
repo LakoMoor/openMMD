@@ -54,4 +54,4 @@ toon maps produce an explicit fallback warning. They are not bundled with openMM
 
 ![WAVEFILE at frame 300 in the native openMMD editor](../site/assets/wavefile.png)
 
-Captured on macOS with the model, motion and camera fetched by the script below. Model: Animasa / Crypton Future Media; motion: hino; camera: doramata. This documents the current renderer, not visual parity with MMD or the MONSTER reference.
+Captured on macOS with the outline pass enabled and the model, motion and camera fetched by the script below. Model: Animasa / Crypton Future Media; motion: hino; camera: doramata. This documents the current renderer, not visual parity with MMD or the MONSTER reference.

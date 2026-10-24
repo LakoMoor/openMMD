@@ -1,8 +1,8 @@
 struct Camera {
  view_projection: mat4x4<f32>, light_direction: vec4<f32>, light_color: vec4<f32>,
- view: mat4x4<f32>, eye: vec4<f32>
+ view: mat4x4<f32>, eye: vec4<f32>, viewport: vec4<f32>
 }
-struct Material { ambient: vec4<f32>, specular: vec4<f32>, settings: vec4<f32> }
+struct Material { ambient: vec4<f32>, specular: vec4<f32>, settings: vec4<f32>, edge_color: vec4<f32> }
 @group(0) @binding(0) var<uniform> camera: Camera;
 @group(1) @binding(0) var diffuse_texture: texture_2d<f32>;
 @group(1) @binding(1) var diffuse_sampler: sampler;
@@ -49,4 +49,28 @@ fn decode_srgb(v: vec3<f32>) -> vec3<f32> {
  let specular = pow(max(dot(n, half_vector), 0.0), max(material.specular.w, 0.0001)) * material.specular.rgb * camera.light_color.rgb;
  color += clamp(specular, vec3<f32>(0.0), vec3<f32>(1.0));
  return vec4<f32>(decode_srgb(clamp(color, vec3<f32>(0.0), vec3<f32>(1.0))), alpha);
+}
+
+struct OutlineOutput {
+ @builtin(position) position: vec4<f32>,
+ @location(0) uv: vec2<f32>,
+ @location(1) alpha: f32,
+ @location(2) width: f32,
+}
+@vertex fn vs_outline(@location(0) p: vec3<f32>, @location(1) n: vec3<f32>, @location(2) uv: vec2<f32>, @location(3) color: vec4<f32>, @location(4) edge_scale: f32) -> OutlineOutput {
+ var out: OutlineOutput;
+ var clip = camera.view_projection * vec4<f32>(p, 1.0);
+ let normal_clip = camera.view_projection * vec4<f32>(n, 0.0);
+ // Project the normal derivative before measuring its direction in viewport pixels.
+ let direction = (normal_clip.xy * clip.w - clip.xy * normal_clip.w) * camera.viewport.xy;
+ let pixel_direction = direction / max(length(direction), 0.000001);
+ let width = max(edge_scale, 0.0) * material.settings.z;
+ clip = vec4<f32>(clip.xy + pixel_direction * (2.0 / camera.viewport.xy) * width * clip.w, clip.zw);
+ out.position = clip; out.uv = uv; out.alpha = color.a; out.width = width;
+ return out;
+}
+@fragment fn fs_outline(v: OutlineOutput) -> @location(0) vec4<f32> {
+ let alpha = material.edge_color.a * v.alpha * textureSample(diffuse_texture, diffuse_sampler, v.uv).a;
+ if alpha < 0.01 || v.width <= 0.0 { discard; }
+ return vec4<f32>(decode_srgb(clamp(material.edge_color.rgb, vec3<f32>(0.0), vec3<f32>(1.0))), alpha);
 }

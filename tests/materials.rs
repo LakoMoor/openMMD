@@ -124,3 +124,26 @@ fn malformed_pmd_optional_material_extension_is_rejected() {
     let bytes = pmd();
     assert!(Model::parse(&bytes[..bytes.len() - 1]).is_err());
 }
+
+#[test]
+fn vertex_edge_controls_are_retained() {
+    let mut bytes = pmd();
+    // PMD header is 283 bytes followed by the vertex count; each vertex is 38 bytes.
+    bytes[287 + 37] = 1;
+    let model = Model::parse(&bytes).unwrap();
+    assert_eq!(model.vertices[0].edge_scale, 0.);
+    assert_eq!(model.vertices[1].edge_scale, 1.);
+    let mut bytes = pmx();
+    // Fixture has a 37-byte header; first BDEF1 vertex is 38 bytes.
+    // Locate the vertex section via its four text lengths instead of assuming a model name.
+    let mut offset = 17;
+    for _ in 0..4 {
+        let length = u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap()) as usize;
+        offset += 4 + length;
+    }
+    offset += 4;
+    bytes[offset + 34..offset + 38].copy_from_slice(&0.25f32.to_le_bytes());
+    let model = Model::parse(&bytes).unwrap();
+    assert_eq!(model.vertices[0].edge_scale, 0.25);
+    assert_eq!(model.vertices[1].edge_scale, 1.);
+}

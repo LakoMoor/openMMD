@@ -190,13 +190,14 @@ pub fn parse(bytes: &[u8]) -> Result<Model> {
         for w in &mut weights {
             *w /= sum;
         }
-        r.f32()?;
+        let edge_scale = r.f32()?;
         vertices.push(Vertex {
             position,
             normal,
             uv,
             bones,
             weights,
+            edge_scale,
         });
     }
     let n = r.count(r.widths[0])?;

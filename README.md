@@ -146,3 +146,5 @@ The release workflow builds and tests each platform before publishing packages.
 [Models, motions and scenes](examples/README.md) include a pinned local fetcher
 for Miku v2 + WAVEFILE, author notices, and source links for the MONSTER reference.
 These assets are not covered by this repository's MIT license and are not bundled.
+
+Контуры PMD/PMX теперь рисуются с цветом и толщиной материала, отключением у отдельных вершин PMD и множителями PMX. Формула толщины пока приближённая: [границы совместимости рендера](docs/rendering.md#outline-pass).

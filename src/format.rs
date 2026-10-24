@@ -61,6 +61,8 @@ pub struct Vertex {
     pub uv: Vec2,
     pub bones: [u16; 4],
     pub weights: [f32; 4],
+    /// PMD edge-disable flag converted to 0/1; PMX per-vertex edge multiplier.
+    pub edge_scale: f32,
 }
 #[derive(Clone, Debug, Default)]
 pub struct Material {
@@ -130,13 +132,14 @@ impl Model {
             let bones = [r.u16()?, r.u16()?, 0, 0];
             let weight = r.u8()?;
             ensure!(weight <= 100, "invalid vertex weight");
-            r.u8()?;
+            let edge_scale = if r.u8()? == 0 { 1. } else { 0. };
             vertices.push(Vertex {
                 position,
                 normal,
                 uv,
                 bones,
                 weights: [weight as f32 / 100.0, 1.0 - weight as f32 / 100.0, 0.0, 0.0],
+                edge_scale,
             });
         }
         let n = r.count(2)?;

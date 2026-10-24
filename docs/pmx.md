@@ -27,7 +27,7 @@ SDEF parameters and QDEF weights are read; both are currently evaluated using
 ordinary linear blend skinning. SDEF and QDEF deformation will differ from MMD.
 Additional UV channels are read and discarded.
 
-Material names and comments are not retained. Double-sided and outline parameters
+Material names and comments are not retained. Double-sided parameters
 are retained but do not yet control rasterization. Sphere mode 3 requires additional
 UVs and is retained with a runtime warning rather than rendered.
 Bone flags, transform ordering, append rotation/translation, fixed/local axes,

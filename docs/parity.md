@@ -119,3 +119,7 @@ static behavior and the remaining implementation without claiming final parity.
 See [rendering](rendering.md) for native shader resource observations, the new
 material bindings, GPU probes and remaining visual differences. No claim of
 full MMD/MME or reference-video equivalence is made.
+
+### Outline progress
+
+The shared native/WebGPU renderer now draws material-colored outlines with PMD vertex suppression and PMX vertex multipliers. The current pixel-width formula is approximate; original MMD edge-width and render-state parity are unverified. See [rendering](rendering.md#outline-pass).

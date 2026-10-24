@@ -7,3 +7,5 @@ The archive name includes its Rust target architecture. Builds are produced on G
 Each ZIP has a companion SHA-256 checksum file. The browser build is published separately at https://lakomoor.github.io/openMMD/app/.
 
 Reference behavior and validation boundaries: https://github.com/LakoMoor/openMMD/blob/main/docs/parity.md.
+
+The current renderer adds PMD/PMX outlines with per-material color/width and per-vertex suppression. Outline width remains an approximation rather than verified MMD visual parity.

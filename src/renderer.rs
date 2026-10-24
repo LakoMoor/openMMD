@@ -12,6 +12,7 @@ struct GpuVertex {
     normal: [f32; 3],
     uv: [f32; 2],
     color: [f32; 4],
+    edge_scale: f32,
 }
 pub struct SceneCamera {
     pub view_projection: Mat4,
@@ -61,6 +62,7 @@ pub fn orbit_projection(size: [u32; 2], yaw: f32, pitch: f32, distance: f32, foc
 pub struct Renderer {
     state: egui_wgpu::RenderState,
     pipeline: wgpu::RenderPipeline,
+    outline_pipeline: wgpu::RenderPipeline,
     camera_buffer: wgpu::Buffer,
     camera_group: wgpu::BindGroup,
     texture_layout: wgpu::BindGroupLayout,
@@ -114,7 +116,7 @@ impl Renderer {
         let device = &state.device;
         let camera_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("camera"),
-            size: 176,
+            size: 192,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -180,12 +182,47 @@ impl Renderer {
             label: Some("PMD toon shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("model.wgsl").into()),
         });
-        let pipeline=device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label:Some("PMD mesh"),layout:Some(&layout),vertex:wgpu::VertexState { module:&shader,entry_point:Some("vs_main"),compilation_options:Default::default(),buffers:&[wgpu::VertexBufferLayout{array_stride:48,step_mode:wgpu::VertexStepMode::Vertex,attributes:&wgpu::vertex_attr_array![0=>Float32x3,1=>Float32x3,2=>Float32x2,3=>Float32x4]}] },
-            fragment:Some(wgpu::FragmentState{module:&shader,entry_point:Some("fs_main"),compilation_options:Default::default(),targets:&[Some(wgpu::ColorTargetState { format:wgpu::TextureFormat::Rgba8UnormSrgb,blend:Some(wgpu::BlendState::ALPHA_BLENDING),write_mask:wgpu::ColorWrites::ALL })]}),
-            primitive:wgpu::PrimitiveState { cull_mode:None,..Default::default() },
-            depth_stencil:Some(wgpu::DepthStencilState { format:wgpu::TextureFormat::Depth32Float,depth_write_enabled:Some(true),depth_compare:Some(wgpu::CompareFunction::Less),stencil:Default::default(),bias:Default::default() }),multisample:wgpu::MultisampleState{count:4,..Default::default()},multiview_mask:None,cache:None,
-        });
+        let make_pipeline = |outline| {
+            device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some(if outline { "MMD outlines" } else { "MMD mesh" }),
+            layout: Some(&layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: Some(if outline { "vs_outline" } else { "vs_main" }),
+                compilation_options: Default::default(),
+                buffers: &[wgpu::VertexBufferLayout {
+                    array_stride: std::mem::size_of::<GpuVertex>() as u64,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &wgpu::vertex_attr_array![0=>Float32x3,1=>Float32x3,2=>Float32x2,3=>Float32x4,4=>Float32],
+                }],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some(if outline { "fs_outline" } else { "fs_main" }),
+                compilation_options: Default::default(),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState {
+                front_face: if outline { wgpu::FrontFace::Cw } else { wgpu::FrontFace::Ccw },
+                cull_mode: if outline { Some(wgpu::Face::Front) } else { None },
+                ..Default::default()
+            },
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Depth32Float,
+                depth_write_enabled: Some(!outline),
+                depth_compare: Some(if outline { wgpu::CompareFunction::LessEqual } else { wgpu::CompareFunction::Less }),
+                stencil: Default::default(), bias: Default::default(),
+            }),
+            multisample: wgpu::MultisampleState { count: 4, ..Default::default() },
+            multiview_mask: None, cache: None,
+        })
+        };
+        let pipeline = make_pipeline(false);
+        let outline_pipeline = make_pipeline(true);
         let size = [800, 600];
         let output = target(device, size, wgpu::TextureFormat::Rgba8UnormSrgb);
         let multisample = target_multisample(device, size, wgpu::TextureFormat::Rgba8UnormSrgb, 4);
@@ -204,11 +241,12 @@ impl Renderer {
             &image::RgbaImage::from_pixel(1, 1, image::Rgba([255; 4])),
             &image::RgbaImage::from_pixel(1, 1, image::Rgba([255; 4])),
             &image::RgbaImage::from_pixel(1, 1, image::Rgba([255; 4])),
-            &[0.; 12],
+            &[0.; 16],
         );
         Self {
             state,
             pipeline,
+            outline_pipeline,
             camera_buffer,
             camera_group,
             texture_layout,
@@ -254,7 +292,7 @@ impl Renderer {
         diffuse: &image::RgbaImage,
         sphere: &image::RgbaImage,
         toon: &image::RgbaImage,
-        values: &[f32; 12],
+        values: &[f32; 16],
     ) -> wgpu::BindGroup {
         let diffuse = Self::texture_view(state, diffuse);
         let sphere = Self::texture_view(state, sphere);
@@ -322,7 +360,8 @@ impl Renderer {
     ) -> Result<()> {
         let count: usize = models.iter().map(|(model, _)| model.indices.len()).sum();
         anyhow::ensure!(
-            (count as u64).saturating_mul(48) <= self.state.device.limits().max_buffer_size,
+            (count as u64).saturating_mul(std::mem::size_of::<GpuVertex>() as u64)
+                <= self.state.device.limits().max_buffer_size,
             "Scene exceeds GPU vertex buffer limit"
         );
         self.warnings.clear();
@@ -367,7 +406,7 @@ impl Renderer {
                 let diffuse = read_image(&material.texture, false).unwrap_or_else(|| white.clone());
                 let sphere = read_image(&material.sphere_texture, false);
                 let toon = read_image(&material.toon_texture, true);
-                let mut values = [0.; 12];
+                let mut values = [0.; 16];
                 values[..3].copy_from_slice(&material.ambient.to_array());
                 values[4..7].copy_from_slice(&material.specular.to_array());
                 values[7] = material.shininess.max(0.);
@@ -377,6 +416,12 @@ impl Renderer {
                     0.
                 };
                 values[9] = if toon.is_some() { 1. } else { 0. };
+                values[10] = if material.edge_enabled {
+                    material.edge_size.max(0.)
+                } else {
+                    0.
+                };
+                values[12..16].copy_from_slice(&material.edge_color);
                 if material.sphere_mode == 3 {
                     self.warnings.push(
                         "PMX sphere subtexture (extra UV) is retained but not rendered".into(),
@@ -397,7 +442,7 @@ impl Renderer {
         let count = total.max(1);
         self.vertex = Some(self.state.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("skinned vertices"),
-            size: (count * 48) as u64,
+            size: (count * std::mem::size_of::<GpuVertex>()) as u64,
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         }));
@@ -454,12 +499,13 @@ impl Renderer {
                     self.texture_id,
                 );
         }
-        let mut uniform = [0f32; 44];
+        let mut uniform = [0f32; 48];
         uniform[..16].copy_from_slice(&camera.view_projection.to_cols_array());
         uniform[16..19].copy_from_slice(&camera.light_direction.to_array());
         uniform[20..23].copy_from_slice(&camera.light_color.to_array());
         uniform[24..40].copy_from_slice(&camera.view.to_cols_array());
         uniform[40..43].copy_from_slice(&camera.eye.to_array());
+        uniform[44..46].copy_from_slice(&[size[0] as f32, size[1] as f32]);
         self.state
             .queue
             .write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&uniform));
@@ -479,6 +525,7 @@ impl Renderer {
                             normal: n.into(),
                             uv: v.uv.into(),
                             color: material.diffuse,
+                            edge_scale: v.edge_scale.max(0.),
                         });
                     }
                 }
@@ -534,6 +581,27 @@ impl Renderer {
                     for material in &model.materials {
                         pass.set_bind_group(1, &self.materials[index], &[]);
                         if pose.visible {
+                            pass.draw_indexed(
+                                offset + material.start..offset + material.start + material.count,
+                                0,
+                                0..1,
+                            );
+                        }
+                        index += 1;
+                    }
+                    offset += model.indices.len() as u32;
+                }
+                pass.set_pipeline(&self.outline_pipeline);
+                let mut index = 0;
+                let mut offset = 0;
+                for &(model, pose) in models {
+                    for material in &model.materials {
+                        if pose.visible
+                            && material.edge_enabled
+                            && material.edge_size > 0.
+                            && material.edge_color[3] > 0.
+                        {
+                            pass.set_bind_group(1, &self.materials[index], &[]);
                             pass.draw_indexed(
                                 offset + material.start..offset + material.start + material.count,
                                 0,
@@ -689,6 +757,96 @@ mod tests {
             Vec3::new(0., 10., 0.),
         );
         assert_eq!(read_output(&renderer), data);
+        // A bright edge color separates outline coverage from the shaded mesh.
+        let mut edged = model.clone();
+        for material in &mut edged.materials {
+            material.edge_enabled = true;
+            material.edge_size = 3.;
+            material.edge_color = [1., 0., 0., 1.];
+        }
+        for vertex in &mut edged.vertices {
+            vertex.edge_scale = 1.;
+        }
+        let red_pixels = |pixels: &[u8]| {
+            pixels
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .filter(|p| p[0] > 200 && p[1] < 20 && p[2] < 20)
+                .count()
+        };
+        renderer.load(&edged, path).unwrap();
+        renderer.draw_scene(
+            &[(&edged, &pose)],
+            [512, 512],
+            0.,
+            0.12,
+            38.,
+            Vec3::new(0., 10., 0.),
+        );
+        let count = red_pixels(&read_output(&renderer));
+        assert!(
+            count > 100 && count < foreground / 3,
+            "unexpected outline coverage: {count} / {foreground}"
+        );
+        let mut ortho = SceneCamera::orbit([512, 512], 0., 0.12, 38., Vec3::new(0., 10., 0.));
+        ortho.view_projection =
+            Mat4::orthographic_lh(-15., 15., -15., 15., 0.1, 10000.) * ortho.view;
+        renderer.draw_scene_camera(&[(&edged, &pose)], [512, 512], &ortho);
+        assert!(
+            red_pixels(&read_output(&renderer)) > 100,
+            "orthographic outlines missing"
+        );
+        for material in &mut edged.materials {
+            material.edge_color[3] = 0.;
+        }
+        renderer.load(&edged, path).unwrap();
+        renderer.draw_scene_camera(&[(&edged, &pose)], [512, 512], &ortho);
+        assert_eq!(
+            red_pixels(&read_output(&renderer)),
+            0,
+            "transparent edge still rendered"
+        );
+        for material in &mut edged.materials {
+            material.edge_color[3] = 1.;
+        }
+        renderer.load(&edged, path).unwrap();
+        for vertex in &mut edged.vertices {
+            vertex.edge_scale = 0.;
+        }
+        renderer.draw_scene(
+            &[(&edged, &pose)],
+            [512, 512],
+            0.,
+            0.12,
+            38.,
+            Vec3::new(0., 10., 0.),
+        );
+        assert_eq!(
+            red_pixels(&read_output(&renderer)),
+            0,
+            "zero vertex scale still draws outlines"
+        );
+        for vertex in &mut edged.vertices {
+            vertex.edge_scale = 1.;
+        }
+        for material in &mut edged.materials {
+            material.edge_enabled = false;
+        }
+        renderer.load(&edged, path).unwrap();
+        renderer.draw_scene(
+            &[(&edged, &pose)],
+            [512, 512],
+            0.,
+            0.12,
+            38.,
+            Vec3::new(0., 10., 0.),
+        );
+        assert_eq!(
+            red_pixels(&read_output(&renderer)),
+            0,
+            "disabled edge still draws outlines"
+        );
         // Render constant material probes so the shader's gamma, sphere modes and toon
         // bindings are checked on the GPU rather than inferred from the CPU importer.
         let mut encoded = std::io::Cursor::new(Vec::new());
