@@ -111,11 +111,14 @@ impl PmmCameraKey {
             return keys.first().cloned();
         }
         let a = &keys[next - 1];
+        if frame == a.frame as f32 {
+            return Some(a.clone());
+        }
         let Some(b) = keys.get(next) else {
             return Some(a.clone());
         };
         let t = ((frame - a.frame as f32) / (b.frame - a.frame) as f32).clamp(0., 1.);
-        let ease = |channel| crate::animation::bezier(t, b.interpolation[channel]);
+        let ease = |channel| crate::animation::camera_bezier(t, b.interpolation[channel]);
         let mut out = a.clone();
         out.frame = frame as u32;
         let delta = b.look_at - a.look_at;

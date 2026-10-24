@@ -130,3 +130,8 @@ MMD_TEST_SCREENSHOT=reference/editor.png cargo run -- reference/original/UserFil
 Для бинарных форматов использованы открытые описания реализации nanoem и
 MMD Tools; ссылки и границы проверки указаны в документации. Лицензии
 оригинального дистрибутива и моделей этим проектом не изменяются.
+
+## MMD 9.32 parity
+
+Exact behavior is the target, but the editor is not yet a 1:1 port.
+[Reference identity, binary findings and remaining acceptance work](docs/parity.md).

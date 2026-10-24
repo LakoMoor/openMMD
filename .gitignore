@@ -2,3 +2,6 @@
 /reference/
 *.DS_Store
 /site/app/pkg/
+
+__pycache__/
+*.pyc

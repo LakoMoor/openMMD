@@ -18,6 +18,30 @@ pub fn bezier(x: f32, control: [u8; 4]) -> f32 {
     }
     curve((lo + hi) * 0.5, y1, y2)
 }
+/// MMD 9.32 camera evaluator: linear shortcut and at most 12 binary-search steps.
+/// Arithmetic order follows the scalar operations observed at 0x14005a8b0.
+/// Exact keyframes bypass this evaluator in PmmCameraKey::sample.
+pub fn camera_bezier(x: f32, control: [u8; 4]) -> f32 {
+    let [x1, y1, x2, y2] = control.map(|v| v.min(127) as f32);
+    if x1 == y1 && x2 == y2 {
+        return x;
+    }
+    let (x1, x2) = (x1 / 127., x2 / 127.);
+    let (mut t, mut step) = (0.5_f32, 0.5_f32);
+    for _ in 0..12 {
+        step *= 0.5;
+        let inverse = 1. - t;
+        let base = inverse * 3.;
+        let value = base * inverse * t * x1 + base * t * t * x2 + t * t * t;
+        if x == value {
+            break;
+        }
+        t += if x <= value { -step } else { step };
+    }
+    let inverse = 1. - t;
+    let base = inverse * 3.;
+    base * inverse * t * y1 / 127. + base * t * t * y2 / 127. + t * t * t
+}
 pub fn sample_bone(keys: &[BoneKey], frame: f32) -> (Vec3, Quat) {
     if keys.is_empty() {
         return (Vec3::ZERO, Quat::IDENTITY);
@@ -229,6 +253,19 @@ impl Pose {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn camera_curve_matches_932_search_precision_and_linear_shortcut() {
+        for (x, expected) in [
+            (0.1, 0x3e205e71),
+            (0.25, 0x3eb122cf),
+            (0.5, 0x3f1e7ddb),
+            (0.75, 0x3f595966),
+            (0.9, 0x3f74cf74),
+        ] {
+            assert_eq!(camera_bezier(x, [16, 32, 96, 120]).to_bits(), expected);
+            assert_eq!(camera_bezier(x, [20, 20, 107, 107]), x);
+        }
+    }
     #[test]
     fn bezier_endpoints_and_linear() {
         for x in [0.0, 0.1, 0.5, 0.9, 1.0] {

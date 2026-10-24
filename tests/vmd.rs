@@ -257,3 +257,23 @@ fn visibility_and_sparse_ik_switches_hold_and_rewind_independently() {
     pose.solve_ik(&model);
     assert_eq!(pose.rotations, original);
 }
+
+#[test]
+fn camera_exact_keyframe_bypasses_non_linear_curve_quantization() {
+    use openmmd::pmm::PmmCameraKey;
+    let a = PmmCameraKey {
+        frame: 10,
+        look_at: Vec3::new(1., 2., 3.),
+        ..Default::default()
+    };
+    let b = PmmCameraKey {
+        frame: 20,
+        look_at: Vec3::splat(1000.),
+        interpolation: [[16, 32, 96, 120]; 6],
+        ..a.clone()
+    };
+    let keys = [a.clone(), b.clone()];
+    assert_eq!(PmmCameraKey::sample(&keys, 10.).unwrap().look_at, a.look_at);
+    assert_eq!(PmmCameraKey::sample(&keys, 20.).unwrap().look_at, b.look_at);
+    assert_eq!(PmmCameraKey::sample(&keys, 0.).unwrap().look_at, a.look_at);
+}
