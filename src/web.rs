@@ -750,6 +750,13 @@ impl WebApp {
         ui.separator();
         ui.heading("Viewport");
         ui.checkbox(&mut self.ik, "Basic IK");
+        if let Some(s) = self.models.get_mut(self.selected) {
+            ui.add(
+                egui::Slider::new(&mut s.model.outline_scale, 0.0..=2.0)
+                    .step_by(0.01)
+                    .text("Edge thickness"),
+            );
+        }
         ui.add_enabled(
             self.scene.is_some() || !self.vmd_scene.cameras.is_empty(),
             egui::Checkbox::new(&mut self.follow_camera, "Follow scene camera"),
@@ -1214,6 +1221,7 @@ fn demo_model() -> (Model, Motion) {
         bones,
         ik: Vec::new(),
         morphs: Vec::new(),
+        outline_scale: 1.,
     };
     let parts = [
         (

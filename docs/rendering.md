@@ -72,3 +72,21 @@ The parser field layout was cross-checked against the independent
 [mmd-parser implementation](https://github.com/takahirox/mmd-parser/blob/master/src/Parser.ts).
 GPU regression probes verify colored silhouette coverage, zero vertex scale and
 material disabling, in addition to the existing material and hidden-model checks.
+
+### Per-model thickness control
+
+Desktop and web inspectors expose an independent model multiplier, initially 1,
+with a slider from 0 to 2 in steps of 0.01. It multiplies material width and
+vertex scale; zero removes the outline. This viewport setting is not yet saved
+to PMM and is reset when the model is reloaded.
+
+Static Ghidra evidence from the reference binary establishes that its English
+edge-thickness dialog (resource 662) uses controls 646/647. Callback
+`0x140056e50` sets a trackbar range 0..200 and stores its position divided by 100
+in the selected model at offset `0x355c`. Evidence:
+`ev_83ae7eb8c8245ce130647a079e330c52bf2d582d78827156ed7ec90a464524bd`.
+The edit-field callback `0x140057190` commits parsed text on Enter without an
+explicit clamp (`ev_c2d0ee0fb3d919564235aa54038a46343c53e788607a1bde18965f86f585fa6d`).
+openMMD currently provides the bounded slider; the original text-entry behavior
+and native rendering formula remain unimplemented. These are static findings,
+not runtime observations of Windows MMD.

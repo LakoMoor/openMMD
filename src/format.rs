@@ -112,6 +112,8 @@ pub struct Model {
     pub bones: Vec<Bone>,
     pub ik: Vec<Ik>,
     pub morphs: Vec<Morph>,
+    /// Per-model viewport outline multiplier; not yet persisted to PMM.
+    pub outline_scale: f32,
 }
 impl Model {
     pub fn parse(bytes: &[u8]) -> Result<Self> {
@@ -357,6 +359,7 @@ impl Model {
             bones,
             ik,
             morphs,
+            outline_scale: 1.,
         })
     }
 }

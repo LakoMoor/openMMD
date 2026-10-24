@@ -525,7 +525,7 @@ impl Renderer {
                             normal: n.into(),
                             uv: v.uv.into(),
                             color: material.diffuse,
-                            edge_scale: v.edge_scale.max(0.),
+                            edge_scale: v.edge_scale.max(0.) * model.outline_scale.max(0.),
                         });
                     }
                 }
@@ -811,6 +811,14 @@ mod tests {
             material.edge_color[3] = 1.;
         }
         renderer.load(&edged, path).unwrap();
+        edged.outline_scale = 0.;
+        renderer.draw_scene_camera(&[(&edged, &pose)], [512, 512], &ortho);
+        assert_eq!(
+            red_pixels(&read_output(&renderer)),
+            0,
+            "zero model scale still draws outlines"
+        );
+        edged.outline_scale = 1.;
         for vertex in &mut edged.vertices {
             vertex.edge_scale = 0.;
         }

@@ -204,6 +204,7 @@ fn switched_rig() -> openmmd::format::Model {
         bones,
         ik: chains,
         morphs: vec![],
+        outline_scale: 1.,
     }
 }
 

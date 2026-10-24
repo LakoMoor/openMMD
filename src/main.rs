@@ -651,6 +651,13 @@ impl eframe::App for App {
                         self.report(r);
                     }
                     ui.checkbox(&mut self.ik, "PMD IK (approximate knees)");
+                    if let Some(s) = self.models.get_mut(self.selected) {
+                        ui.add(
+                            egui::Slider::new(&mut s.model.outline_scale, 0.0..=2.0)
+                                .step_by(0.01)
+                                .text("Edge thickness"),
+                        );
+                    }
                     let mut sync = false;
                     if let Some(s) = self.models.get(self.selected) {
                         ui.small(format!(

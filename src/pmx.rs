@@ -527,6 +527,7 @@ pub fn parse(bytes: &[u8]) -> Result<Model> {
         bones,
         ik,
         morphs,
+        outline_scale: 1.,
     })
 }
 
