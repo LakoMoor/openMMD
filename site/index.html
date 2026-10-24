@@ -13,6 +13,9 @@
   <title>openMMD — Your next MMD scene</title>
   <link rel="stylesheet" href="style.css">
   <script src="app.js" defer></script>
+
+
+<!-- alternate-links --><link rel="alternate" hreflang="en" href="https://lakomoor.github.io/openMMD/"><link rel="alternate" hreflang="ja" href="https://lakomoor.github.io/openMMD/ja/"><link rel="alternate" hreflang="zh-Hans" href="https://lakomoor.github.io/openMMD/zh-Hans/"><!-- /alternate-links -->
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -20,6 +23,7 @@
     <div class="wrap header-inner">
       <a class="wordmark" href="#" aria-label="openMMD home"><span class="mark" aria-hidden="true">m</span>open<strong>MMD</strong><span class="alpha">EARLY ACCESS</span></a>
       <button class="menu-toggle" aria-expanded="false" aria-controls="main-nav" type="button">Menu <span aria-hidden="true">☰</span></button>
+      <!-- language-links --><div class="languages" aria-label="Language"><a href="./" lang="en" hreflang="en" aria-current="page">EN</a><a href="./ja/" lang="ja" hreflang="ja">日本語</a><a href="./zh-Hans/" lang="zh-Hans" hreflang="zh-Hans">简体中文</a></div><!-- /language-links -->
       <nav id="main-nav" aria-label="Main navigation"><a href="#workspace">Workspace</a><a href="#compatibility">Compatibility</a><a href="#get-started">Desktop setup</a><a href="https://github.com/LakoMoor/openMMD">GitHub ↗</a><a class="nav-launch" href="app/">Open editor <span aria-hidden="true">↗</span></a></nav>
     </div>
   </header>
@@ -55,12 +59,12 @@
     <section class="compatibility wrap" id="compatibility" aria-labelledby="compatibility-title">
       <div class="section-heading"><div><p class="eyebrow">03 / PROJECT STATUS</p><h2 id="compatibility-title">Know your tools.<br>Know their limits.</h2></div><p>This is an early editor. Full MMD shading, physics, accessories and complete PMM behavior are still in development.</p></div>
       <table><caption class="sr-only">Current file format support and limitations</caption><thead><tr><th scope="col">Format / system</th><th scope="col">Working today</th><th scope="col">Still ahead</th></tr></thead><tbody>
-        <tr><th scope="row"><span class="format">PMD</span><span class="format-note">Model</span></th><td><span class="state">Implemented subset</span><p>Mesh, diffuse textures, bones, vertex morphs and basic IK.</p></td><td>Rigid-body physics, complete materials and exact MMD IK behavior.</td></tr>
-        <tr><th scope="row"><span class="format">PMX 2.0 / 2.1</span><span class="format-note">Model</span></th><td><span class="state partial">Partial</span><p>Mesh, four bone influences, skeleton, vertex morphs and diffuse materials.</p></td><td>SDEF/QDEF use linear skinning. Advanced morphs and bone behavior are not evaluated; soft bodies are rejected. <a href="https://github.com/LakoMoor/openMMD/blob/main/docs/pmx.md">Details ↗</a></td></tr>
-        <tr><th scope="row"><span class="format">VMD / VPD</span><span class="format-note">Motion / pose</span></th><td><span class="state">Motion + scene tracks</span><p>Bone/morph motion, camera/light playback, visibility and IK switches. VPD import/export.</p></td><td>Self-shadow keys are preserved but not rendered. Camera transforms and IK are approximate. <a href="https://github.com/LakoMoor/openMMD/blob/main/docs/vmd.md">Details ↗</a></td></tr>
-        <tr><th scope="row"><span class="format">PMM v1 / v2</span><span class="format-note">Project</span></th><td><span class="state partial">Partial editing</span><p>Bone/morph tracks, camera/light playback and key editing.</p></td><td>Accessories, physics, shadows and full editor settings. Camera equivalence with MMD is unverified. Keep original projects.</td></tr>
-        <tr><th scope="row"><span class="format">WebGPU / WASM</span><span class="format-note">Browser</span></th><td><span class="state">Working browser build</span><p>Local files, shared rendering and animation, key editing and exports.</p></td><td>A WebGPU-capable browser is required. Advanced curves and PMM camera/light key editing remain desktop-only. Mobile GPU support depends on the browser and device.</td></tr>
-        <tr><th scope="row"><span class="format">macOS / Windows / Linux</span><span class="format-note">Desktop</span></th><td><span class="state">CI on all three</span><p>Builds and ordinary tests run on all three platforms.</p></td><td>Desktop GPU playback is currently verified on macOS. Windows and Linux runtime testing remains ahead.</td></tr>
+        <tr><th scope="row"><span class="format">PMD</span><span class="format-note">Model</span></th><td><span class="state">Implemented subset</span><p>Mesh, diffuse textures, bones, vertex morphs and basic IK.</p></td><td data-limit-label="Still ahead">Rigid-body physics, complete materials and exact MMD IK behavior.</td></tr>
+        <tr><th scope="row"><span class="format">PMX 2.0 / 2.1</span><span class="format-note">Model</span></th><td><span class="state partial">Partial</span><p>Mesh, four bone influences, skeleton, vertex morphs and diffuse materials.</p></td><td data-limit-label="Still ahead">SDEF/QDEF use linear skinning. Advanced morphs and bone behavior are not evaluated; soft bodies are rejected. <a href="https://github.com/LakoMoor/openMMD/blob/main/docs/pmx.md">Details ↗</a></td></tr>
+        <tr><th scope="row"><span class="format">VMD / VPD</span><span class="format-note">Motion / pose</span></th><td><span class="state">Motion + scene tracks</span><p>Bone/morph motion, camera/light playback, visibility and IK switches. VPD import/export.</p></td><td data-limit-label="Still ahead">Self-shadow keys are preserved but not rendered. Camera transforms and IK are approximate. <a href="https://github.com/LakoMoor/openMMD/blob/main/docs/vmd.md">Details ↗</a></td></tr>
+        <tr><th scope="row"><span class="format">PMM v1 / v2</span><span class="format-note">Project</span></th><td><span class="state partial">Partial editing</span><p>Bone/morph tracks, camera/light playback and key editing.</p></td><td data-limit-label="Still ahead">Accessories, physics, shadows and full editor settings. Camera equivalence with MMD is unverified. Keep original projects.</td></tr>
+        <tr><th scope="row"><span class="format">WebGPU / WASM</span><span class="format-note">Browser</span></th><td><span class="state">Working browser build</span><p>Local files, shared rendering and animation, key editing and exports.</p></td><td data-limit-label="Still ahead">A WebGPU-capable browser is required. Advanced curves and PMM camera/light key editing remain desktop-only. Mobile GPU support depends on the browser and device.</td></tr>
+        <tr><th scope="row"><span class="format">macOS / Windows / Linux</span><span class="format-note">Desktop</span></th><td><span class="state">CI on all three</span><p>Builds and ordinary tests run on all three platforms.</p></td><td data-limit-label="Still ahead">Desktop GPU playback is currently verified on macOS. Windows and Linux runtime testing remains ahead.</td></tr>
       </tbody></table>
       <p class="compatibility-footnote">Have a reproducible mismatch? <a href="https://github.com/LakoMoor/openMMD/issues">Help improve compatibility ↗</a></p>
     </section>

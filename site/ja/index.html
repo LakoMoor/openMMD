@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1417">
+  <meta name="description" content="Rustとwgpuで開発する独立したオープンソースのMMDアニメーションエディター。Web版、デスクトップ版、形式の対応状況をご覧ください。">
+  <meta property="og:title" content="openMMD — 次のMMDシーンへ">
+  <meta property="og:description" content="いつものモデルで、新しいステージへ。開発中のオープンソースエディター。">
+  <meta property="og:image" content="https://lakomoor.github.io/openMMD/assets/web.png">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b1417'/%3E%3Cpath d='M13 44V21h9l10 13 10-13h9v23h-9V33L32 46 22 33v11z' fill='%2384ebcd'/%3E%3C/svg%3E">
+  <title>openMMD — 次のMMDシーンへ</title>
+  <link rel="stylesheet" href="../style.css">
+  <script src="../app.js" defer></script>
+
+
+<!-- alternate-links --><link rel="alternate" hreflang="en" href="https://lakomoor.github.io/openMMD/"><link rel="alternate" hreflang="ja" href="https://lakomoor.github.io/openMMD/ja/"><link rel="alternate" hreflang="zh-Hans" href="https://lakomoor.github.io/openMMD/zh-Hans/"><!-- /alternate-links -->
+</head>
+<body>
+  <a class="skip" href="#main">本文へスキップ</a>
+  <header class="header">
+    <div class="wrap header-inner">
+      <a class="wordmark" href="#" aria-label="openMMD ホーム"><span class="mark" aria-hidden="true">m</span>open<strong>MMD</strong><span class="alpha">開発初期版</span></a>
+      <button class="menu-toggle" aria-expanded="false" aria-controls="main-nav" type="button">メニュー <span aria-hidden="true">☰</span></button>
+      <!-- language-links --><div class="languages" aria-label="言語"><a href="../" lang="en" hreflang="en">EN</a><a href="../ja/" lang="ja" hreflang="ja" aria-current="page">日本語</a><a href="../zh-Hans/" lang="zh-Hans" hreflang="zh-Hans">简体中文</a></div><!-- /language-links -->
+      <nav id="main-nav" aria-label="メインナビゲーション"><a href="#workspace">ワークスペース</a><a href="#compatibility">互換性</a><a href="#get-started">デスクトップ版</a><a href="https://github.com/LakoMoor/openMMD">GitHub ↗</a><a class="nav-launch" href="../app/?lang=ja">エディターを開く <span aria-hidden="true">↗</span></a></nav>
+    </div>
+  </header>
+  <main id="main">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> オープンソース。新しいステージ。</p>
+        <h1 id="hero-title">次の<br><span>MMDシーンへ。</span></h1>
+        <p class="hero-description">いつものキャラクターと、<br>新しい表現を。</p>
+        <p class="hero-detail">Rustとwgpuで開発する、独立したMMD互換アニメーションエディター。デスクトップとブラウザーで動作します。</p>
+        <div class="hero-actions"><a class="button primary" href="../app/?lang=ja">Web版を起動 <span aria-hidden="true">↗</span></a><a class="text-link" href="#workspace">ワークスペースを見る <span aria-hidden="true">↓</span></a></div>
+        <p class="hero-note">インストール不要 · ローカルファイル · WebGPU必須</p>
+      </div>
+      <figure class="hero-stage">
+        <div class="stage-top"><span><i class="status-dot" aria-hidden="true"></i> レンダリング画像 / 開発初期版</span><span>01 — ミク</span></div>
+        <a class="screenshot" href="../assets/miku.png" data-caption="openMMDのwgpuによる実際の描画。モデルはデモ用で、データは同梱していません。" aria-label="openMMDの実際の描画を見る"><img src="../assets/miku.png" alt="openMMDのRust・wgpuレンダラーで描画したミク" width="1200" height="900" fetchpriority="high"></a>
+        <figcaption><span>いつものモデル。<br><strong>新しい基盤。</strong></span><a href="../app/?lang=ja" aria-label="openMMD Webを試す">↗</a></figcaption>
+      </figure>
+    </section>
+    <div class="platforms wrap"><p>RUSTで共通の基盤を</p><div><span>macOS</span><span>Windows</span><span>Linux</span><span>WebAssembly</span></div><a href="#compatibility">対応状況を見る <span aria-hidden="true">↘</span></a></div>
+
+    <section class="workspace wrap" id="workspace" aria-labelledby="workspace-title">
+      <div class="section-heading"><div><p class="eyebrow">01 / ワークスペース</p><h2 id="workspace-title">最初のポーズから<br>次のフレームへ。</h2></div><p>テクスチャ付きビューポート、ボーン・モーフ操作、アニメーションタイムライン。使い慣れたツールを、オープンな開発基盤で。</p></div>
+      <div class="preview-selector" role="group" aria-label="ワークスペースの画像を選択"><button type="button" data-preview="browser" aria-pressed="true">ブラウザー版 <span>WASM / WebGPU</span></button><button type="button" data-preview="desktop" aria-pressed="false">デスクトップ版 <span>Rust / wgpu</span></button><button type="button" data-preview="mobile" aria-pressed="false">モバイル表示 <span>タッチ操作</span></button><span class="capture-label">実際のアプリケーション画面</span></div>
+      <figure class="workspace-capture" data-capture="browser"><a class="screenshot shot-main" href="../assets/web.png" data-caption="ローカルモデルとVMDカメラ・照明軌道を読み込んだopenMMD Web" aria-label="ブラウザー版の画像を拡大"><div class="window-bar" aria-hidden="true"><span class="window-dots"><i></i><i></i><i></i></span><span>openMMD / Webワークスペース</span><span>↗</span></div><img src="../assets/web.png" alt="ミクのモデル、ボーン・モーフ操作、VMD再生を表示するブラウザー版" width="1440" height="1000" loading="lazy"></a><figcaption><span>ブラウザーで動作。モデルファイルはこのタブのメモリー内で処理されます。</span><a href="../app/?lang=ja">試してみる ↗</a></figcaption></figure>
+      <figure class="workspace-capture" data-capture="desktop"><a class="screenshot shot-main" href="../assets/editor.png" data-caption="macOSで動作するopenMMDデスクトップ版" aria-label="デスクトップ版の画像を拡大"><div class="window-bar" aria-hidden="true"><span class="window-dots"><i></i><i></i><i></i></span><span>openMMD / デスクトップワークスペース</span><span>↗</span></div><img src="../assets/editor.png" alt="モデル操作とキータイムラインを表示するopenMMDネイティブ版" width="1440" height="900" loading="lazy"></a><figcaption><span>ネイティブアプリ。ご利用の環境でソースからビルドできます。</span><a href="#get-started">デスクトップ版の準備 ↓</a></figcaption></figure>
+      <figure class="workspace-capture" data-capture="mobile"><a class="screenshot phone-capture" href="../assets/web-mobile.png" data-caption="幅390 CSSピクセルでローカルモデルを表示したブラウザー版。WebGPUの利用可否は端末・ブラウザーによります。" aria-label="モバイル表示の画像を拡大"><img src="../assets/web-mobile.png" alt="画面幅を活かしたビューポートとタッチ操作を備える縦画面のopenMMD" width="390" height="844" loading="lazy"></a><figcaption><span>画面幅を活かすステージ。ボーン・モーフは「インスペクター」、書き出しは「ツール」から。</span><a href="../app/?lang=ja">エディターを開く ↗</a></figcaption></figure>
+      <div class="workflow-grid"><article><span class="step">01 / 読み込み</span><h3>モデルを読み込む。</h3><p>PMD、または対応範囲内のPMXをテクスチャと一緒に読み込みます。まずは内蔵のデモリグで操作を試せます。</p></article><article><span class="step">02 / ポーズ</span><h3>表情とポーズをつくる。</h3><p>ボーンや表情モーフを調整し、VPDポーズを読み込めます。操作の取り消し・やり直しにも対応。</p></article><article><span class="step">03 / アニメーション</span><h3>動きをつける。</h3><p>VMDモーションを再生し、ボーン・モーフキーを編集。カメラと照明のアニメーションにも追従します。</p></article></div>
+    </section>
+
+    <section class="scene-section" aria-labelledby="scene-title"><div class="wrap scene-grid"><div class="scene-copy"><p class="eyebrow">02 / モデルからシーンへ</p><h2 id="scene-title">シーンに<br>視点を与える。</h2><p>モデルより先にカメラ・照明VMDを読み込めます。カメラ追従、表示・IK切り替えの再生、シーンモーションの個別書き出しに対応。</p><p class="muted">PMM v1/v2の編集機能を拡充中。デスクトップ版ではカメラ・照明キーも編集できます。互換性はまだ一部です。</p><a class="text-link" href="https://github.com/LakoMoor/openMMD/blob/main/docs/pmm.md">PMMの対応状況 <span aria-hidden="true">↗</span></a></div><figure><a class="screenshot" href="../assets/scene.png" data-caption="カメラ・照明キーを操作するopenMMDのPMMシーン" aria-label="PMMシーンの画像を拡大"><img src="../assets/scene.png" alt="カメラ・照明操作付きでPMMシーンを再生するopenMMD" width="1440" height="900" loading="lazy"></a><figcaption>PMMシーン / ネイティブアプリ画面</figcaption></figure></div></section>
+
+    <section class="compatibility wrap" id="compatibility" aria-labelledby="compatibility-title">
+      <div class="section-heading"><div><p class="eyebrow">03 / 開発状況</p><h2 id="compatibility-title">できることを知る。<br>制限も知る。</h2></div><p>開発初期のエディターです。MMDの完全なシェーディング、物理演算、アクセサリー、PMMの全機能は開発中です。</p></div>
+      <table><caption class="sr-only">現在のファイル形式対応と制限</caption><thead><tr><th scope="col">形式 / システム</th><th scope="col">現在の対応</th><th scope="col">今後の対応</th></tr></thead><tbody>
+        <tr><th scope="row"><span class="format">PMD</span><span class="format-note">モデル</span></th><td><span class="state">一部実装済み</span><p>メッシュ、拡散テクスチャ、ボーン、頂点モーフ、基本IK。</p></td><td data-limit-label="今後の対応">剛体物理、完全なマテリアル、MMDと同一のIK挙動。</td></tr>
+        <tr><th scope="row"><span class="format">PMX 2.0 / 2.1</span><span class="format-note">モデル</span></th><td><span class="state partial">一部対応</span><p>メッシュ、4ボーンウェイト、スケルトン、頂点モーフ、拡散マテリアル。</p></td><td data-limit-label="今後の対応">SDEF/QDEFは線形スキニングで近似。高度なモーフ・ボーン挙動は未評価。ソフトボディは読み込み時に拒否します。 <a href="https://github.com/LakoMoor/openMMD/blob/main/docs/pmx.md">詳細 ↗</a></td></tr>
+        <tr><th scope="row"><span class="format">VMD / VPD</span><span class="format-note">モーション / ポーズ</span></th><td><span class="state">モーション・シーン軌道</span><p>ボーン・モーフ、カメラ・照明、表示・IK切り替えの再生。VPDの入出力。</p></td><td data-limit-label="今後の対応">セルフシャドウキーは保持しますが描画には未反映。カメラ変換とIKは近似です。 <a href="https://github.com/LakoMoor/openMMD/blob/main/docs/vmd.md">詳細 ↗</a></td></tr>
+        <tr><th scope="row"><span class="format">PMM v1 / v2</span><span class="format-note">プロジェクト</span></th><td><span class="state partial">一部編集に対応</span><p>ボーン・モーフ軌道、カメラ・照明の再生とキー編集。</p></td><td data-limit-label="今後の対応">アクセサリー、物理、影、全編集設定は未対応。MMDと同一のカメラ挙動は未検証です。元のプロジェクトを保管してください。</td></tr>
+        <tr><th scope="row"><span class="format">WebGPU / WASM</span><span class="format-note">ブラウザー</span></th><td><span class="state">ブラウザー版が動作</span><p>ローカルファイル、共通レンダリング・アニメーション、キー編集、書き出し。</p></td><td data-limit-label="今後の対応">WebGPU対応ブラウザーが必要です。高度なカーブとPMMカメラ・照明キーの編集はデスクトップ版のみ。モバイルのGPU対応は端末・ブラウザーによります。</td></tr>
+        <tr><th scope="row"><span class="format">macOS / Windows / Linux</span><span class="format-note">デスクトップ</span></th><td><span class="state">3環境でCI検証</span><p>3プラットフォームでビルドと通常テストを実行しています。</p></td><td data-limit-label="今後の対応">デスクトップのGPU再生はmacOSで検証済み。Windows・Linuxの実行時テストは今後の対応です。</td></tr>
+      </tbody></table>
+      <p class="compatibility-footnote">再現できる不具合がありますか？ <a href="https://github.com/LakoMoor/openMMD/issues">互換性の改善に協力する ↗</a></p>
+    </section>
+
+    <section class="start-section wrap" id="get-started" aria-labelledby="start-title"><div class="start-copy"><p class="eyebrow">04 / ステージを選ぶ</p><h2 id="start-title">タブを開く。<br>自分でビルドする。</h2><p>ローカルファイルでWeb版を試すか、Rustツールチェーンでネイティブ版をビルドできます。</p><a class="button primary" href="../app/?lang=ja">Web版を開く <span aria-hidden="true">↗</span></a><p class="small-note">オリジナルのモデルは配布していません。お手持ちの素材か内蔵デモをご利用ください。</p></div><div class="desktop-setup"><div class="terminal"><div class="terminal-label"><span>デスクトップ / ソースからビルド</span><button class="copy-button" type="button" data-copy aria-label="セットアップコマンドをコピー">コピー ⧉</button></div><pre><code id="setup-commands">git clone https://github.com/LakoMoor/openMMD.git
+cd openMMD
+cargo run --release</code></pre><span class="copy-status" role="status" aria-live="polite"></span></div><a class="setup-link" href="https://github.com/LakoMoor/openMMD#readme">環境ごとの依存関係とセットアップ <span aria-hidden="true">↗</span></a><p class="small-note">Rustツールチェーンが必要です。ビルド済みバイナリーはまだ配布していません。</p></div></section>
+  </main>
+  <footer class="footer wrap"><div><a class="wordmark" href="#">open<strong>MMD</strong><span class="status-dot" aria-hidden="true"></span></a><p>独立した実装として、開発を進めています。<br>オリジナルのMikuMikuDanceプロジェクトとは関係ありません。</p><p class="small-note">掲載モデルの権利は各権利者に帰属します。モデルデータは同梱していません。</p></div><div class="footer-right"><a href="https://github.com/LakoMoor/openMMD">ソースコード ↗</a><a href="https://github.com/LakoMoor/openMMD/issues">不具合を報告 ↗</a><span>RUST + WGPU<br>動きを、未来へ。</span></div></footer>
+  <dialog class="lightbox" aria-labelledby="lightbox-caption"><button class="lightbox-close" type="button" aria-label="画像を閉じる">閉じる <span aria-hidden="true">×</span></button><img alt=""><p id="lightbox-caption"></p></dialog>
+</body>
+</html>

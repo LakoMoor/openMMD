@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1417">
+  <meta name="description" content="使用 Rust 和 wgpu 构建的独立开源 MMD 动画编辑器。体验浏览器版，了解桌面构建与格式兼容性。">
+  <meta property="og:title" content="openMMD — 创作下一个 MMD 场景">
+  <meta property="og:description" content="熟悉的模型，全新的舞台。持续开发中的开源桌面和浏览器编辑器。">
+  <meta property="og:image" content="https://lakomoor.github.io/openMMD/assets/web.png">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b1417'/%3E%3Cpath d='M13 44V21h9l10 13 10-13h9v23h-9V33L32 46 22 33v11z' fill='%2384ebcd'/%3E%3C/svg%3E">
+  <title>openMMD — 创作下一个 MMD 场景</title>
+  <link rel="stylesheet" href="../style.css">
+  <script src="../app.js" defer></script>
+
+
+<!-- alternate-links --><link rel="alternate" hreflang="en" href="https://lakomoor.github.io/openMMD/"><link rel="alternate" hreflang="ja" href="https://lakomoor.github.io/openMMD/ja/"><link rel="alternate" hreflang="zh-Hans" href="https://lakomoor.github.io/openMMD/zh-Hans/"><!-- /alternate-links -->
+</head>
+<body>
+  <a class="skip" href="#main">跳转到正文</a>
+  <header class="header">
+    <div class="wrap header-inner">
+      <a class="wordmark" href="#" aria-label="openMMD 首页"><span class="mark" aria-hidden="true">m</span>open<strong>MMD</strong><span class="alpha">早期版本</span></a>
+      <button class="menu-toggle" aria-expanded="false" aria-controls="main-nav" type="button">菜单 <span aria-hidden="true">☰</span></button>
+      <!-- language-links --><div class="languages" aria-label="语言"><a href="../" lang="en" hreflang="en">EN</a><a href="../ja/" lang="ja" hreflang="ja">日本語</a><a href="../zh-Hans/" lang="zh-Hans" hreflang="zh-Hans" aria-current="page">简体中文</a></div><!-- /language-links -->
+      <nav id="main-nav" aria-label="主导航"><a href="#workspace">工作区</a><a href="#compatibility">兼容性</a><a href="#get-started">桌面版安装</a><a href="https://github.com/LakoMoor/openMMD">GitHub ↗</a><a class="nav-launch" href="../app/?lang=zh-Hans">打开编辑器 <span aria-hidden="true">↗</span></a></nav>
+    </div>
+  </header>
+  <main id="main">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> 开源代码，开放舞台。</p>
+        <h1 id="hero-title">你的下一个<br><span>MMD 场景。</span></h1>
+        <p class="hero-description">带上熟悉的角色，<br>开启新的创作。</p>
+        <p class="hero-detail">使用 Rust 和 wgpu 重新构建的独立 MMD 兼容动画编辑器，支持桌面和浏览器。</p>
+        <div class="hero-actions"><a class="button primary" href="../app/?lang=zh-Hans">启动网页版 <span aria-hidden="true">↗</span></a><a class="text-link" href="#workspace">探索工作区 <span aria-hidden="true">↓</span></a></div>
+        <p class="hero-note">无需安装 · 本地文件 · 需要 WebGPU</p>
+      </div>
+      <figure class="hero-stage">
+        <div class="stage-top"><span><i class="status-dot" aria-hidden="true"></i> 渲染截图 / 早期版本</span><span>01 — 初音未来</span></div>
+        <a class="screenshot" href="../assets/miku.png" data-caption="openMMD 的实际 wgpu 渲染画面。模型仅作演示，不附带模型素材。" aria-label="查看 openMMD 实际渲染"><img src="../assets/miku.png" alt="由 openMMD 的 Rust 和 wgpu 渲染器绘制的初音未来" width="1200" height="900" fetchpriority="high"></a>
+        <figcaption><span>熟悉的模型。<br><strong>全新的基础。</strong></span><a href="../app/?lang=zh-Hans" aria-label="体验 openMMD Web">↗</a></figcaption>
+      </figure>
+    </section>
+    <div class="platforms wrap"><p>统一的 RUST 基础</p><div><span>macOS</span><span>Windows</span><span>Linux</span><span>WebAssembly</span></div><a href="#compatibility">查看支持情况 <span aria-hidden="true">↘</span></a></div>
+
+    <section class="workspace wrap" id="workspace" aria-labelledby="workspace-title">
+      <div class="section-heading"><div><p class="eyebrow">01 / 你的工作区</p><h2 id="workspace-title">从第一个姿势<br>到下一帧。</h2></div><p>带纹理的视口、骨骼和变形控制，以及动画时间轴。熟悉的工具，建立在开放的基础之上。</p></div>
+      <div class="preview-selector" role="group" aria-label="选择工作区截图"><button type="button" data-preview="browser" aria-pressed="true">浏览器编辑器 <span>WASM / WebGPU</span></button><button type="button" data-preview="desktop" aria-pressed="false">桌面编辑器 <span>Rust / wgpu</span></button><button type="button" data-preview="mobile" aria-pressed="false">移动端布局 <span>触控操作</span></button><span class="capture-label">实际应用截图</span></div>
+      <figure class="workspace-capture" data-capture="browser"><a class="screenshot shot-main" href="../assets/web.png" data-caption="加载本地模型及 VMD 相机和灯光轨道的 openMMD Web" aria-label="放大浏览器编辑器截图"><div class="window-bar" aria-hidden="true"><span class="window-dots"><i></i><i></i><i></i></span><span>openMMD / 网页工作区</span><span>↗</span></div><img src="../assets/web.png" alt="显示初音未来模型、骨骼与变形控制和 VMD 播放的浏览器编辑器" width="1440" height="1000" loading="lazy"></a><figcaption><span>直接在浏览器中运行，模型文件仅保存在当前标签页中。</span><a href="../app/?lang=zh-Hans">立即体验 ↗</a></figcaption></figure>
+      <figure class="workspace-capture" data-capture="desktop"><a class="screenshot shot-main" href="../assets/editor.png" data-caption="在 macOS 上运行的原生 openMMD 桌面编辑器" aria-label="放大桌面编辑器截图"><div class="window-bar" aria-hidden="true"><span class="window-dots"><i></i><i></i><i></i></span><span>openMMD / 桌面工作区</span><span>↗</span></div><img src="../assets/editor.png" alt="包含模型控制和关键帧时间轴的原生 openMMD 编辑器" width="1440" height="900" loading="lazy"></a><figcaption><span>原生应用，可在你的平台上从源码构建。</span><a href="#get-started">桌面版安装 ↓</a></figcaption></figure>
+      <figure class="workspace-capture" data-capture="mobile"><a class="screenshot phone-capture" href="../assets/web-mobile.png" data-caption="以 390 CSS 像素宽度显示本地模型的自适应浏览器编辑器。WebGPU 可用性取决于设备和浏览器。" aria-label="放大移动端编辑器截图"><img src="../assets/web-mobile.png" alt="竖屏 openMMD 编辑器，具有全宽视口和紧凑触控按钮" width="390" height="844" loading="lazy"></a><figcaption><span>舞台占满屏幕宽度。骨骼和变形控制位于“检查器”，导出功能位于“工具”。</span><a href="../app/?lang=zh-Hans">打开编辑器 ↗</a></figcaption></figure>
+      <div class="workflow-grid"><article><span class="step">01 / 导入</span><h3>导入你的模型。</h3><p>将 PMD 或受支持的 PMX 文件与纹理一起打开。也可以先试用内置的程序化演示模型。</p></article><article><span class="step">02 / 姿势</span><h3>找到合适的表情。</h3><p>移动骨骼、调整面部变形，并导入 VPD 姿势。支持撤销和重做。</p></article><article><span class="step">03 / 动画</span><h3>让它动起来。</h3><p>播放 VMD 动作、编辑骨骼和变形关键帧，并跟随相机和灯光动画轨道。</p></article></div>
+    </section>
+
+    <section class="scene-section" aria-labelledby="scene-title"><div class="wrap scene-grid"><div class="scene-copy"><p class="eyebrow">02 / 不止于模型</p><h2 id="scene-title">为场景<br>选择一个视角。</h2><p>可以在加载模型前导入相机和灯光 VMD。支持跟随镜头、播放可见性和 IK 开关，并单独导出场景动画。</p><p class="muted">PMM v1/v2 的编辑功能持续完善中，包括桌面版的相机和灯光关键帧编辑。兼容性仍不完整。</p><a class="text-link" href="https://github.com/LakoMoor/openMMD/blob/main/docs/pmm.md">了解 PMM 支持 <span aria-hidden="true">↗</span></a></div><figure><a class="screenshot" href="../assets/scene.png" data-caption="带有相机和灯光关键帧控制的 openMMD PMM 场景" aria-label="放大 PMM 场景截图"><img src="../assets/scene.png" alt="在 openMMD 中播放的 PMM 场景，带相机和灯光控制" width="1440" height="900" loading="lazy"></a><figcaption>PMM 场景 / 原生应用截图</figcaption></figure></div></section>
+
+    <section class="compatibility wrap" id="compatibility" aria-labelledby="compatibility-title">
+      <div class="section-heading"><div><p class="eyebrow">03 / 项目状态</p><h2 id="compatibility-title">了解工具。<br>了解它的局限。</h2></div><p>这是早期版本的编辑器。完整的 MMD 着色、物理、配件和 PMM 行为仍在开发中。</p></div>
+      <table><caption class="sr-only">当前文件格式支持与限制</caption><thead><tr><th scope="col">格式 / 系统</th><th scope="col">当前支持</th><th scope="col">尚待实现</th></tr></thead><tbody>
+        <tr><th scope="row"><span class="format">PMD</span><span class="format-note">模型</span></th><td><span class="state">已实现部分功能</span><p>网格、漫反射纹理、骨骼、顶点变形和基础 IK。</p></td><td data-limit-label="尚待实现">刚体物理、完整材质和与 MMD 一致的 IK 行为。</td></tr>
+        <tr><th scope="row"><span class="format">PMX 2.0 / 2.1</span><span class="format-note">模型</span></th><td><span class="state partial">部分支持</span><p>网格、四骨骼权重、骨架、顶点变形和漫反射材质。</p></td><td data-limit-label="尚待实现">SDEF/QDEF 使用线性蒙皮近似。高级变形和骨骼行为尚未计算；不接受软体。 <a href="https://github.com/LakoMoor/openMMD/blob/main/docs/pmx.md">详情 ↗</a></td></tr>
+        <tr><th scope="row"><span class="format">VMD / VPD</span><span class="format-note">动作 / 姿势</span></th><td><span class="state">动作与场景轨道</span><p>骨骼和变形动画、相机和灯光播放、可见性与 IK 开关。支持 VPD 导入和导出。</p></td><td data-limit-label="尚待实现">保留自阴影关键帧，但尚未渲染。相机变换和 IK 使用近似实现。 <a href="https://github.com/LakoMoor/openMMD/blob/main/docs/vmd.md">详情 ↗</a></td></tr>
+        <tr><th scope="row"><span class="format">PMM v1 / v2</span><span class="format-note">项目</span></th><td><span class="state partial">部分编辑功能</span><p>骨骼和变形轨道、相机和灯光播放，以及关键帧编辑。</p></td><td data-limit-label="尚待实现">配件、物理、阴影和完整编辑器设置尚未支持。相机与 MMD 的一致性未经验证，请保留原始项目。</td></tr>
+        <tr><th scope="row"><span class="format">WebGPU / WASM</span><span class="format-note">浏览器</span></th><td><span class="state">可用的浏览器版本</span><p>本地文件、共享渲染与动画、关键帧编辑和导出。</p></td><td data-limit-label="尚待实现">需要支持 WebGPU 的浏览器。高级曲线和 PMM 相机及灯光关键帧编辑仅限桌面版。移动端 GPU 支持取决于设备和浏览器。</td></tr>
+        <tr><th scope="row"><span class="format">macOS / Windows / Linux</span><span class="format-note">桌面</span></th><td><span class="state">三平台 CI 验证</span><p>在三个平台上运行构建和常规测试。</p></td><td data-limit-label="尚待实现">桌面 GPU 播放目前已在 macOS 上验证。Windows 和 Linux 的运行时测试尚待完成。</td></tr>
+      </tbody></table>
+      <p class="compatibility-footnote">发现了可复现的差异？ <a href="https://github.com/LakoMoor/openMMD/issues">帮助改进兼容性 ↗</a></p>
+    </section>
+
+    <section class="start-section wrap" id="get-started" aria-labelledby="start-title"><div class="start-copy"><p class="eyebrow">04 / 选择你的舞台</p><h2 id="start-title">打开标签页。<br>或亲自构建。</h2><p>使用本地文件体验浏览器编辑器，或使用 Rust 工具链构建原生应用。</p><a class="button primary" href="../app/?lang=zh-Hans">打开网页版 <span aria-hidden="true">↗</span></a><p class="small-note">本站不托管原版模型。请使用自己的素材或程序化演示模型。</p></div><div class="desktop-setup"><div class="terminal"><div class="terminal-label"><span>桌面版 / 从源码构建</span><button class="copy-button" type="button" data-copy aria-label="复制安装命令">复制 ⧉</button></div><pre><code id="setup-commands">git clone https://github.com/LakoMoor/openMMD.git
+cd openMMD
+cargo run --release</code></pre><span class="copy-status" role="status" aria-live="polite"></span></div><a class="setup-link" href="https://github.com/LakoMoor/openMMD#readme">平台依赖与安装指南 <span aria-hidden="true">↗</span></a><p class="small-note">需要 Rust 工具链，暂未提供预构建版本下载。</p></div></section>
+  </main>
+  <footer class="footer wrap"><div><a class="wordmark" href="#">open<strong>MMD</strong><span class="status-dot" aria-hidden="true"></span></a><p>独立实现，持续开发中。<br>与原 MikuMikuDance 项目无关联。</p><p class="small-note">图中模型归各自权利人所有，项目不附带模型素材。</p></div><div class="footer-right"><a href="https://github.com/LakoMoor/openMMD">源代码 ↗</a><a href="https://github.com/LakoMoor/openMMD/issues">报告问题 ↗</a><span>RUST + WGPU<br>让创作继续前行。</span></div></footer>
+  <dialog class="lightbox" aria-labelledby="lightbox-caption"><button class="lightbox-close" type="button" aria-label="关闭截图">关闭 <span aria-hidden="true">×</span></button><img alt=""><p id="lightbox-caption"></p></dialog>
+</body>
+</html>

@@ -40,9 +40,9 @@ if (!navigator.clipboard) {
   copyButton.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(document.querySelector('#setup-commands').textContent);
-      copyStatus.textContent = 'Commands copied.';
+      copyStatus.textContent = ({ja:'コマンドをコピーしました。','zh-Hans':'已复制命令。'})[document.documentElement.lang] || 'Commands copied.';
     } catch {
-      copyStatus.textContent = 'Select the commands above to copy them.';
+      copyStatus.textContent = ({ja:'上のコマンドを選択してコピーしてください。','zh-Hans':'请选择上方命令并复制。'})[document.documentElement.lang] || 'Select the commands above to copy them.';
     }
     clearTimeout(timeout);
     timeout = setTimeout(() => { copyStatus.textContent = ''; }, 5000);
@@ -77,3 +77,6 @@ function selectPreview(name) {
 }
 previewButtons.forEach(button => button.addEventListener('click', () => selectPreview(button.dataset.preview)));
 selectPreview('browser');
+
+// Explicit language links keep the selected language without redirecting visitors.
+try { localStorage.setItem('openmmd-language', document.documentElement.lang); } catch {}
