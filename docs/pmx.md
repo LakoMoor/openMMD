@@ -23,8 +23,9 @@ not establish visual or behavioral equivalence with MikuMikuDance.
 
 ## Approximations and missing evaluation
 
-SDEF parameters and QDEF weights are read; both are currently evaluated using
-ordinary linear blend skinning. SDEF and QDEF deformation will differ from MMD.
+SDEF retains its center and radius vectors and uses spherical interpolation of
+the two bone rotations with weighted transformed anchors. QDEF weights are
+still evaluated using ordinary linear blend skinning and will differ from MMD.
 Additional UV channels are read and discarded.
 
 Material names and comments are not retained. Double-sided parameters control back-face culling in the shared renderer. Sphere mode 3 requires additional
@@ -71,4 +72,19 @@ modes, root sentinels, direct vertex morph indices, every truncated prefix,
 invalid counts/references, parent cycles and nonfinite vertices. A runtime test
 checks rest pose, vertex morph displacement and blending across four bones. Run
 `cargo test pmx::tests`. Real PMX asset comparison and SDEF/QDEF reference pose
-comparisons remain outstanding; these tests establish synthetic parsing and linear skinning behavior only.
+comparisons remain outstanding. Synthetic SDEF tests independently verify rest pose,
+a numeric two-bone bend, morph ordering, endpoint weights and common rigid transforms.
+
+## SDEF implementation boundary
+
+The shared CPU skinning path applies vertex morphs first, then interpolates the
+two global bone rotations. Corrected radius anchors account for each bone's
+inverse bind translation. Normals use the interpolated rotation rather than a
+linear normal blend. PMD and BDEF paths are unchanged.
+
+The formula was cross-checked against
+[saba's independent implementation](https://github.com/benikabocha/saba/blob/master/src/Saba/Model/MMD/PMXModel.cpp),
+not recovered from the original Windows MMD executable. The synthetic fixtures
+establish mathematical behavior; real-model visual parity remains unverified.
+Bone scale/shear, QDEF, append transforms and full material/bone morph evaluation
+are outside this change.

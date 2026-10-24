@@ -54,6 +54,12 @@ impl<'a> Reader<'a> {
         Ok(n)
     }
 }
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Sdef {
+    pub center: Vec3,
+    pub r0: Vec3,
+    pub r1: Vec3,
+}
 #[derive(Clone, Debug)]
 pub struct Vertex {
     pub position: Vec3,
@@ -63,6 +69,7 @@ pub struct Vertex {
     pub weights: [f32; 4],
     /// PMD edge-disable flag converted to 0/1; PMX per-vertex edge multiplier.
     pub edge_scale: f32,
+    pub sdef: Option<Sdef>,
 }
 #[derive(Clone, Debug, Default)]
 pub struct Material {
@@ -142,6 +149,7 @@ impl Model {
                 bones,
                 weights: [weight as f32 / 100.0, 1.0 - weight as f32 / 100.0, 0.0, 0.0],
                 edge_scale,
+                sdef: None,
             });
         }
         let n = r.count(2)?;

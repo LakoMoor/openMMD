@@ -1,4 +1,4 @@
-//! Bounded PMX 2.0/2.1 mesh import. SDEF/QDEF currently use linear skinning.
+//! Bounded PMX 2.0/2.1 mesh import. SDEF is retained; QDEF still uses linear skinning.
 //! Non-vertex morphs, bone append/axis constraints and physics are consumed but
 //! not evaluated by the shared animation model. Original file bytes must be
 //! retained for any lossless project workflow.
@@ -141,6 +141,7 @@ pub fn parse(bytes: &[u8]) -> Result<Model> {
         let mut raw = [-1; 4];
         let mut weights = [0.0; 4];
         let mode = r.u8()?;
+        let mut sdef = None;
         match mode {
             0 => {
                 raw[0] = r.index(3)?;
@@ -152,7 +153,11 @@ pub fn parse(bytes: &[u8]) -> Result<Model> {
                 weights[0] = r.f32()?;
                 weights[1] = 1.0 - weights[0];
                 if mode == 3 {
-                    r.floats(9)?;
+                    sdef = Some(crate::format::Sdef {
+                        center: r.v3()?,
+                        r0: r.v3()?,
+                        r1: r.v3()?,
+                    });
                 }
             }
             2 | 4 => {
@@ -198,6 +203,7 @@ pub fn parse(bytes: &[u8]) -> Result<Model> {
             bones,
             weights,
             edge_scale,
+            sdef,
         });
     }
     let n = r.count(r.widths[0])?;
@@ -572,8 +578,8 @@ mod tests {
                 index(&mut out, 0);
                 f(&mut out, 0.75);
                 if mode == 3 {
-                    for _ in 0..9 {
-                        f(&mut out, 0.);
+                    for value in [1., 2., 3., 4., 5., 6., 7., 8., 9.] {
+                        f(&mut out, value);
                     }
                 }
             }
@@ -628,6 +634,15 @@ mod tests {
                 for mode in 0..=4 {
                     let m = parse(&fixture(utf8, mode, width)).unwrap();
                     assert_eq!(m.name, "ミク");
+                    if mode == 3 {
+                        let sdef = m.vertices[0].sdef.unwrap();
+                        assert_eq!(sdef.center, Vec3::new(1., 2., 3.));
+                        assert_eq!(sdef.r0, Vec3::new(4., 5., 6.));
+                        assert_eq!(sdef.r1, Vec3::new(7., 8., 9.));
+                    } else {
+                        assert!(m.vertices[0].sdef.is_none());
+                    }
+
                     assert_eq!(m.bones[0].parent, None);
                     assert_eq!(m.morphs[1].vertices[0], (0, Vec3::new(1., 2., 3.)));
                     assert!((m.vertices[0].weights.iter().sum::<f32>() - 1.).abs() < 0.0001);
@@ -637,9 +652,14 @@ mod tests {
     }
     #[test]
     fn every_truncated_prefix_is_rejected() {
-        let bytes = fixture(true, 2, 4);
-        for end in 0..bytes.len() {
-            assert!(parse(&bytes[..end]).is_err(), "accepted prefix {end}");
+        for mode in [2, 3] {
+            let bytes = fixture(true, mode, 4);
+            for end in 0..bytes.len() {
+                assert!(
+                    parse(&bytes[..end]).is_err(),
+                    "mode {mode}: accepted prefix {end}"
+                );
+            }
         }
     }
     #[test]
@@ -651,6 +671,18 @@ mod tests {
         let vertex_start = 17 + 4 + "ミク".len() + 12 + 4;
         bytes[vertex_start..vertex_start + 4].copy_from_slice(&f32::NAN.to_le_bytes());
         assert!(parse(&bytes).is_err());
+    }
+    #[test]
+    fn rejects_nonfinite_sdef_parameters() {
+        let bytes = fixture(true, 3, 1);
+        let vertex_start = 17 + 4 + "ミク".len() + 12 + 4;
+        let sdef_start = vertex_start + 32 + 1 + 2 + 4;
+        for component in 0..9 {
+            let mut bad = bytes.clone();
+            let offset = sdef_start + component * 4;
+            bad[offset..offset + 4].copy_from_slice(&f32::NAN.to_le_bytes());
+            assert!(parse(&bad).is_err(), "nonfinite SDEF component {component}");
+        }
     }
     #[test]
     fn rejects_cycles_counts_and_invalid_skin_reference() {

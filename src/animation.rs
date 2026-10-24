@@ -218,6 +218,14 @@ impl Pose {
             .zip(&model.bones)
             .map(|(m, b)| *m * Mat4::from_translation(-b.position))
             .collect();
+        let rotations: Vec<_> = if model.vertices.iter().any(|v| v.sdef.is_some()) {
+            globals
+                .iter()
+                .map(|m| Quat::from_mat4(m).normalize())
+                .collect()
+        } else {
+            Vec::new()
+        };
         let mut positions: Vec<_> = model.vertices.iter().map(|v| v.position).collect();
         if let Some(base) = model.morphs.iter().find(|m| m.base) {
             for (m, &weight) in model.morphs.iter().zip(&self.morphs) {
@@ -234,6 +242,18 @@ impl Pose {
             .iter()
             .zip(positions)
             .map(|(v, p)| {
+                if let Some(sdef) = v.sdef {
+                    let [w0, w1, ..] = v.weights;
+                    let [i0, i1, ..] = v.bones.map(usize::from);
+                    let rotation = rotations[i0].slerp(rotations[i1], w1).normalize();
+                    let rw = sdef.r0 * w0 + sdef.r1 * w1;
+                    let anchor0 = sdef.center + (sdef.r0 - rw) * 0.5;
+                    let anchor1 = sdef.center + (sdef.r1 - rw) * 0.5;
+                    let position = rotation * (p - sdef.center)
+                        + matrices[i0].transform_point3(anchor0) * w0
+                        + matrices[i1].transform_point3(anchor1) * w1;
+                    return (position, (rotation * v.normal).normalize_or_zero());
+                }
                 let mut position = Vec3::ZERO;
                 let mut normal = Vec3::ZERO;
                 for (&bone, &weight) in v.bones.iter().zip(&v.weights) {
