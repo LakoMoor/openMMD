@@ -77,8 +77,9 @@ material disabling, in addition to the existing material and hidden-model checks
 
 Desktop and web inspectors expose an independent model multiplier, initially 1,
 with a slider from 0 to 2 in steps of 0.01. It multiplies material width and
-vertex scale; zero removes the outline. This viewport setting is not yet saved
-to PMM and is reset when the model is reloaded.
+vertex scale; zero removes the outline. The setting is loaded from and saved to PMM v2. PMM v1 has no matching field;
+export rejects a changed multiplier instead of silently dropping it. Standalone
+model files still start at 1.
 
 Static Ghidra evidence from the reference binary establishes that its English
 edge-thickness dialog (resource 662) uses controls 646/647. Callback
@@ -90,3 +91,15 @@ explicit clamp (`ev_c2d0ee0fb3d919564235aa54038a46343c53e788607a1bde18965f86f585
 openMMD currently provides the bounded slider; the original text-entry behavior
 and native rendering formula remain unimplemented. These are static findings,
 not runtime observations of Windows MMD.
+
+### PMM v2 storage
+
+The model tail stores a blend byte, the float32 outline multiplier, a self-shadow
+byte and a transform-order byte. This layout was checked against nanoem's
+[independent parser and writer](https://github.com/hkrn/nanoem/blob/main/nanoem/ext/document.c).
+Only the multiplier's four bytes are patched. Model and scene offsets remain
+valid when animation sections grow or shrink. Finite imported values outside
+the UI slider range are preserved; non-finite values are rejected. Regression
+tests cover byte preservation, invalid inputs and independent multipliers after
+rebuilding animation for two models. Original bundled PMM projects are also
+parsed and reopened. Windows MMD acceptance of edited copies remains unverified.

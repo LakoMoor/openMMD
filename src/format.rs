@@ -112,7 +112,7 @@ pub struct Model {
     pub bones: Vec<Bone>,
     pub ik: Vec<Ik>,
     pub morphs: Vec<Morph>,
-    /// Per-model viewport outline multiplier; not yet persisted to PMM.
+    /// Per-model outline multiplier; persisted in PMM v2.
     pub outline_scale: f32,
 }
 impl Model {

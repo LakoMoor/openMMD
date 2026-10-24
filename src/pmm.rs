@@ -12,6 +12,9 @@ pub struct PmmModel {
     pub name: String,
     pub path: String,
     path_offset: usize,
+    /// PMM v2 per-model outline multiplier; v1 has no corresponding field.
+    pub outline_scale: f32,
+    outline_offset: Option<usize>,
     pub motion: Motion,
     bone_names: Vec<String>,
     morph_names: Vec<String>,
@@ -415,6 +418,9 @@ fn shift_model_offsets(m: &mut PmmModel, boundary: usize, delta: isize) {
     shift(&mut m.animation_range.end);
     shift(&mut m.last_frame_offset);
     shift(&mut m.path_offset);
+    if let Some(offset) = &mut m.outline_offset {
+        shift(offset);
+    }
     for offsets in m
         .bone_offsets
         .values_mut()
@@ -742,9 +748,15 @@ impl PmmProject {
         }
         r.skip(bones.len() * if version == 2 { 31 } else { 34 })?;
         r.skip(morphs.len() * 4 + constraints + outside * 16)?;
-        if version == 2 {
-            r.skip(7)?;
-        }
+        let (outline_scale, outline_offset) = if version == 2 {
+            r.skip(1)?; // blend flag
+            let offset = r.pos;
+            let scale = r.float()?;
+            r.skip(2)?; // self-shadow flag and transform order
+            (scale, Some(offset))
+        } else {
+            (1., None)
+        };
         let mut motion = Motion {
             model_name: name.clone(),
             ..Motion::default()
@@ -793,6 +805,8 @@ impl PmmProject {
             name,
             path,
             path_offset,
+            outline_scale,
+            outline_offset,
             motion,
             bone_offsets,
             morph_offsets,
@@ -804,6 +818,24 @@ impl PmmProject {
             last_frame_offset,
             other_last_frame,
         })
+    }
+    /// Patch only the v2 model's four-byte outline multiplier.
+    pub fn set_outline_scale(&mut self, model: usize, scale: f32) -> Result<()> {
+        ensure!(scale.is_finite(), "PMM outline scale must be finite");
+        let m = self
+            .models
+            .get_mut(model)
+            .context("PMM model index out of range")?;
+        if let Some(offset) = m.outline_offset {
+            self.bytes[offset..offset + 4].copy_from_slice(&scale.to_le_bytes());
+            m.outline_scale = scale;
+        } else {
+            ensure!(
+                scale == 1.,
+                "PMM v1 cannot store a model outline multiplier"
+            );
+        }
+        Ok(())
     }
     /// Replace the fixed Shift-JIS model path without moving or touching other records.
     /// PMM reserves 256 bytes, including a required NUL terminator.
@@ -1081,6 +1113,11 @@ impl PmmProject {
         }
         let m = &mut self.models[model];
         m.animation_range.end = range.end.checked_add_signed(delta).unwrap();
+        if let Some(offset) = &mut m.outline_offset {
+            *offset = offset
+                .checked_add_signed(delta)
+                .expect("valid PMM outline offset");
+        }
         m.bone_offsets.clear();
         m.morph_offsets.clear();
         m.bone_tracks.clear();
@@ -1617,6 +1654,8 @@ mod tests {
         key.frame = 100;
         motion.bones.get_mut("root").unwrap().push(key);
         project.set_motion(0, motion).unwrap();
+        project.set_outline_scale(0, 0.75).unwrap();
+        project.set_outline_scale(1, 1.5).unwrap();
         project.set_model_path(1, "nested/second.pmd").unwrap();
         project.set_morph_key(1, "smile", 0, 0.8).unwrap();
         let mut motion = project.models[1].motion.clone();
@@ -1631,6 +1670,84 @@ mod tests {
         assert_eq!(loaded.models[0].motion.morphs["smile"][0].weight, 0.4);
         assert_eq!(loaded.models[1].motion.morphs["smile"][0].weight, 0.8);
         assert_eq!(loaded.models[1].path, "nested/second.pmd");
+        assert_eq!(loaded.models[0].outline_scale, 0.75);
+        assert_eq!(loaded.models[1].outline_scale, 1.5);
+    }
+
+    #[test]
+    #[ignore = "requires downloaded MMD sample assets"]
+    fn bundled_outline_scales_patch_only_their_fields() {
+        let root =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("reference/original/UserFile");
+        for file in [
+            "sample.pmm",
+            "sample(AllStar).pmm",
+            "sample(follow_camera).pmm",
+        ] {
+            let source = std::fs::read(root.join(file)).unwrap();
+            let parse = |bytes: &[u8]| {
+                PmmProject::parse_with_resolver(bytes, |path| {
+                    let file = path.rsplit(['\\', '/']).next().unwrap();
+                    Model::parse(&std::fs::read(root.join("Model").join(file))?)
+                })
+                .unwrap()
+            };
+            let mut project = parse(&source);
+            assert_eq!(project.to_bytes(), source);
+            for i in 0..project.models.len() {
+                if project.version == 2 {
+                    project.set_outline_scale(i, (i + 1) as f32 * 0.25).unwrap();
+                } else {
+                    project.set_outline_scale(i, 1.).unwrap();
+                }
+            }
+            let output = project.to_bytes();
+            for i in 0..source.len() {
+                if !project
+                    .models
+                    .iter()
+                    .any(|m| m.outline_offset.is_some_and(|o| (o..o + 4).contains(&i)))
+                {
+                    assert_eq!(output[i], source[i], "{file} changed byte {i}");
+                }
+            }
+            let loaded = parse(&output);
+            for (a, b) in project.models.iter().zip(&loaded.models) {
+                assert_eq!(a.outline_scale, b.outline_scale);
+            }
+        }
+    }
+
+    #[test]
+    fn outline_patch_is_bounded_lossless_and_atomic() {
+        let source = fixture();
+        let mut project = PmmProject::parse(&source).unwrap();
+        assert_eq!(project.to_bytes(), source);
+        let offset = project.models[0].outline_offset.unwrap();
+        for scale in [0., 0.75, 2., 3., -1.] {
+            project.set_outline_scale(0, scale).unwrap();
+            let output = project.to_bytes();
+            assert_eq!(&output[..offset], &source[..offset]);
+            assert_eq!(&output[offset + 4..], &source[offset + 4..]);
+            assert_eq!(
+                PmmProject::parse(&output).unwrap().models[0].outline_scale,
+                scale
+            );
+        }
+        let before = project.to_bytes();
+        for scale in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            assert!(project.set_outline_scale(0, scale).is_err());
+            assert_eq!(project.to_bytes(), before);
+        }
+        assert!(project.set_outline_scale(1, 1.).is_err());
+        let mut invalid = source.clone();
+        invalid[offset..offset + 4].copy_from_slice(&f32::NAN.to_le_bytes());
+        assert!(PmmProject::parse(&invalid).is_err());
+        let mut legacy = project.clone();
+        legacy.models[0].outline_offset = None;
+        assert!(legacy.set_outline_scale(0, 0.5).is_err());
+        assert_eq!(legacy.to_bytes(), before);
+        legacy.set_outline_scale(0, 1.).unwrap();
     }
 
     #[test]

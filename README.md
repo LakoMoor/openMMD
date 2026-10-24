@@ -148,3 +148,5 @@ for Miku v2 + WAVEFILE, author notices, and source links for the MONSTER referen
 These assets are not covered by this repository's MIT license and are not bundled.
 
 Контуры PMD/PMX теперь рисуются с цветом и толщиной материала, отключением у отдельных вершин PMD и множителями PMX. Формула толщины пока приближённая: [границы совместимости рендера](docs/rendering.md#outline-pass).
+
+Толщина контуров каждой модели загружается и сохраняется в PMM v2. Для PMM v1 изменение этого параметра при экспорте отклоняется: формат не содержит соответствующего поля.

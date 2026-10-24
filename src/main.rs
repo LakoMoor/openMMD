@@ -305,7 +305,8 @@ impl App {
                 let mut models = Vec::new();
                 for pm in &project.models {
                     let path = resolve_model(path, &pm.path)?;
-                    let model = Model::parse(&std::fs::read(&path)?)?;
+                    let mut model = Model::parse(&std::fs::read(&path)?)?;
+                    model.outline_scale = pm.outline_scale;
                     models.push(SceneModel {
                         path,
                         model,
@@ -398,6 +399,7 @@ impl App {
         let mut project = original.clone();
         for (i, s) in self.models.iter().enumerate() {
             project.set_motion(i, s.motion.model_only())?;
+            project.set_outline_scale(i, s.model.outline_scale)?;
         }
         for (index, model) in self.models.iter().enumerate() {
             let absolute = std::fs::canonicalize(&model.path)?;
@@ -655,6 +657,7 @@ impl eframe::App for App {
                         ui.add(
                             egui::Slider::new(&mut s.model.outline_scale, 0.0..=2.0)
                                 .step_by(0.01)
+                                .clamping(egui::SliderClamping::Edits)
                                 .text("Edge thickness"),
                         );
                     }

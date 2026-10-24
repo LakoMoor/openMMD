@@ -300,9 +300,11 @@ impl WebApp {
         for m in &project.models {
             let (path, bytes) = resolve(&self.assets, &m.path)
                 .with_context(|| format!("Missing or ambiguous model: {}", m.path))?;
+            let mut model = Model::parse(bytes)?;
+            model.outline_scale = m.outline_scale;
             models.push(SceneModel {
                 path: path.into(),
-                model: Model::parse(bytes)?,
+                model,
                 motion: m.motion.clone(),
                 history: History::default(),
             });
@@ -515,6 +517,7 @@ impl WebApp {
                     .context("Load a PMM project before exporting PMM")?;
                 for (i, s) in self.models.iter().enumerate() {
                     p.set_motion(i, s.motion.model_only())?;
+                    p.set_outline_scale(i, s.model.outline_scale)?;
                 }
                 download("openmmd-edited.pmm", &p.to_bytes())?;
             }
@@ -754,6 +757,7 @@ impl WebApp {
             ui.add(
                 egui::Slider::new(&mut s.model.outline_scale, 0.0..=2.0)
                     .step_by(0.01)
+                    .clamping(egui::SliderClamping::Edits)
                     .text("Edge thickness"),
             );
         }
