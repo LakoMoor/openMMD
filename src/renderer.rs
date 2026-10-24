@@ -62,6 +62,7 @@ pub fn orbit_projection(size: [u32; 2], yaw: f32, pitch: f32, distance: f32, foc
 pub struct Renderer {
     state: egui_wgpu::RenderState,
     pipeline: wgpu::RenderPipeline,
+    double_sided_pipeline: wgpu::RenderPipeline,
     outline_pipeline: wgpu::RenderPipeline,
     camera_buffer: wgpu::Buffer,
     camera_group: wgpu::BindGroup,
@@ -182,7 +183,7 @@ impl Renderer {
             label: Some("PMD toon shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("model.wgsl").into()),
         });
-        let make_pipeline = |outline| {
+        let make_pipeline = |outline, double_sided| {
             device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some(if outline { "MMD outlines" } else { "MMD mesh" }),
             layout: Some(&layout),
@@ -207,8 +208,8 @@ impl Renderer {
                 })],
             }),
             primitive: wgpu::PrimitiveState {
-                front_face: if outline { wgpu::FrontFace::Cw } else { wgpu::FrontFace::Ccw },
-                cull_mode: if outline { Some(wgpu::Face::Front) } else { None },
+                front_face: wgpu::FrontFace::Cw,
+                cull_mode: if outline { Some(wgpu::Face::Front) } else if double_sided { None } else { Some(wgpu::Face::Back) },
                 ..Default::default()
             },
             depth_stencil: Some(wgpu::DepthStencilState {
@@ -221,8 +222,9 @@ impl Renderer {
             multiview_mask: None, cache: None,
         })
         };
-        let pipeline = make_pipeline(false);
-        let outline_pipeline = make_pipeline(true);
+        let pipeline = make_pipeline(false, false);
+        let double_sided_pipeline = make_pipeline(false, true);
+        let outline_pipeline = make_pipeline(true, false);
         let size = [800, 600];
         let output = target(device, size, wgpu::TextureFormat::Rgba8UnormSrgb);
         let multisample = target_multisample(device, size, wgpu::TextureFormat::Rgba8UnormSrgb, 4);
@@ -246,6 +248,7 @@ impl Renderer {
         Self {
             state,
             pipeline,
+            double_sided_pipeline,
             outline_pipeline,
             camera_buffer,
             camera_group,
@@ -579,6 +582,11 @@ impl Renderer {
                 let mut offset = 0;
                 for &(model, pose) in models {
                     for material in &model.materials {
+                        pass.set_pipeline(if material.double_sided {
+                            &self.double_sided_pipeline
+                        } else {
+                            &self.pipeline
+                        });
                         pass.set_bind_group(1, &self.materials[index], &[]);
                         if pose.visible {
                             pass.draw_indexed(
@@ -854,6 +862,70 @@ mod tests {
             red_pixels(&read_output(&renderer)),
             0,
             "disabled edge still draws outlines"
+        );
+        // Independent one-triangle raster probe: clockwise is the front side in
+        // MMD's left-handed model coordinates. Reversing indices must hide only
+        // single-sided materials, without changing two-sided coverage.
+        let mut triangle = model.clone();
+        triangle.vertices.truncate(3);
+        for (vertex, position) in triangle.vertices.iter_mut().zip([
+            Vec3::new(-0.8, -0.8, 0.5),
+            Vec3::new(0., 0.8, 0.5),
+            Vec3::new(0.8, -0.8, 0.5),
+        ]) {
+            vertex.position = position;
+            vertex.normal = -Vec3::Z;
+        }
+        triangle.indices = vec![0, 1, 2];
+        triangle.materials = vec![crate::format::Material {
+            diffuse: [0., 0., 0., 1.],
+            ambient: Vec3::Y,
+            count: 3,
+            ..Default::default()
+        }];
+        let camera = SceneCamera {
+            view_projection: Mat4::IDENTITY,
+            view: Mat4::IDENTITY,
+            eye: -Vec3::Z,
+            light_direction: -Vec3::Z,
+            light_color: Vec3::ONE,
+        };
+        let green_pixels = |data: &[u8]| {
+            data.as_chunks::<4>()
+                .0
+                .iter()
+                .filter(|p| p[1] > 240 && p[0] < 10 && p[2] < 10)
+                .count()
+        };
+        let mut coverage = Vec::new();
+        for (double_sided, reversed) in [(false, false), (false, true), (true, false), (true, true)]
+        {
+            triangle.materials[0].double_sided = double_sided;
+            triangle.indices = if reversed {
+                vec![0, 2, 1]
+            } else {
+                vec![0, 1, 2]
+            };
+            let pose = Pose::sample(&triangle, &Default::default(), 0.);
+            renderer.load(&triangle, path).unwrap();
+            renderer.draw_scene_camera(&[(&triangle, &pose)], [512, 512], &camera);
+            coverage.push(green_pixels(&read_output(&renderer)));
+        }
+        assert!(coverage[0] > 50000, "front triangle missing: {coverage:?}");
+        assert_eq!(coverage[1], 0, "back face was not culled");
+        assert_eq!(coverage[0], coverage[2]);
+        assert_eq!(coverage[2], coverage[3]);
+        triangle.materials[0].double_sided = false;
+        triangle.materials[0].ambient = Vec3::ZERO;
+        triangle.materials[0].diffuse = [0., 1., 0., 1.];
+        triangle.indices = vec![0, 1, 2];
+        let pose = Pose::sample(&triangle, &Default::default(), 0.);
+        renderer.load(&triangle, path).unwrap();
+        renderer.draw_scene_camera(&[(&triangle, &pose)], [512, 512], &camera);
+        assert_eq!(
+            green_pixels(&read_output(&renderer)),
+            coverage[0],
+            "front normal lighting was inverted"
         );
         // Render constant material probes so the shader's gamma, sphere modes and toon
         // bindings are checked on the GPU rather than inferred from the CPU importer.

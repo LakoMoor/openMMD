@@ -33,8 +33,7 @@ not a claim that every native MMD shader branch has been reproduced.
 ## Remaining differences
 
 No self-shadow/ground-shadow map, material morphs or MME effects are rendered yet.
-Double-sided parameters are retained;
-all surfaces currently use the existing two-sided pipeline. PMX sphere mode 3
+PMX single-sided materials now cull back faces; two-sided materials retain both sides. PMX sphere mode 3
 requires extra UV channels: it is explicitly warned about and not rendered.
 Transparent-material sorting, precise alpha/depth behavior and all material
 combinations still require implementation and comparison.
@@ -66,7 +65,7 @@ Width currently means viewport pixels: material size 1 with vertex multiplier 1
 expands one pixel along the projected normal. This is an explicit approximation,
 not the recovered MMD 9.32 edge-width formula. Perspective/orthographic projection,
 viewport scaling and the original edge render state still need comparison with
-Windows MMD. Ordinary mesh culling/normal handling remains unchanged in this pass.
+Windows MMD. Mesh and outline passes use clockwise front faces in the left-handed model coordinates.
 
 The parser field layout was cross-checked against the independent
 [mmd-parser implementation](https://github.com/takahirox/mmd-parser/blob/master/src/Parser.ts).
@@ -103,3 +102,19 @@ the UI slider range are preserved; non-finite values are rejected. Regression
 tests cover byte preservation, invalid inputs and independent multipliers after
 rebuilding animation for two models. Original bundled PMM projects are also
 parsed and reopened. Windows MMD acceptance of edited copies remains unverified.
+
+## Material sidedness
+
+The mesh renderer selects back-face culling per material. PMX flag bit 0 enables
+both sides; single-sided PMX material backs are discarded. PMD retains its
+existing opacity-based import rule (alpha below 1 enables both sides). The mesh
+and outline pipelines consistently treat clockwise triangles as front-facing in
+MMD's left-handed coordinates. This also fixes the front/back normal sign used
+by lighting, which previously used the opposite front-face convention.
+
+A GPU triangle fixture verifies front visibility, reversed-winding rejection,
+identical two-sided coverage for both windings, and front-facing directional
+lighting. Existing original-model, hidden-model, toon/sphere and outline probes
+also pass. Alpha sorting and exact original Windows MMD raster-state behavior
+are still unverified. The PMX flag layout is documented in the
+[independent PMX format specification](https://gist.github.com/felixjones/f8a06bd48f9da9a4539f).

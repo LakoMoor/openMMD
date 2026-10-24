@@ -147,3 +147,15 @@ fn vertex_edge_controls_are_retained() {
     assert_eq!(model.vertices[0].edge_scale, 0.25);
     assert_eq!(model.vertices[1].edge_scale, 1.);
 }
+
+#[test]
+fn pmx_sidedness_follows_the_material_flag() {
+    let mut bytes = pmx();
+    let name = bytes.windows(8).position(|b| b == b"material").unwrap();
+    let flag_offset = name + 8 + 4 + 11 * 4;
+    // The fixture has fractional diffuse alpha: PMX's explicit flag still decides sidedness.
+    bytes[flag_offset] = 16;
+    assert!(!Model::parse(&bytes).unwrap().materials[0].double_sided);
+    bytes[flag_offset] = 17;
+    assert!(Model::parse(&bytes).unwrap().materials[0].double_sided);
+}
