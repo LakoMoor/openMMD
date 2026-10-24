@@ -1285,6 +1285,7 @@ fn demo_model() -> (Model, Motion) {
                     weights: [1., 0., 0., 0.],
                     edge_scale: 1.,
                     sdef: None,
+                    qdef: false,
                 });
             }
             model

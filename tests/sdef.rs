@@ -16,6 +16,7 @@ fn model() -> Model {
             bones: [0, 1, 0, 0],
             weights: [0.5, 0.5, 0., 0.],
             edge_scale: 1.,
+            qdef: false,
             sdef: Some(Sdef {
                 center: Vec3::X,
                 r0: Vec3::X * 2.,

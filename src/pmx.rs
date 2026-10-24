@@ -1,4 +1,4 @@
-//! Bounded PMX 2.0/2.1 mesh import. SDEF is retained; QDEF still uses linear skinning.
+//! Bounded PMX 2.0/2.1 mesh import with BDEF, SDEF and QDEF skinning.
 //! Non-vertex morphs, bone append/axis constraints and physics are consumed but
 //! not evaluated by the shared animation model. Original file bytes must be
 //! retained for any lossless project workflow.
@@ -204,6 +204,7 @@ pub fn parse(bytes: &[u8]) -> Result<Model> {
             weights,
             edge_scale,
             sdef,
+            qdef: mode == 4,
         });
     }
     let n = r.count(r.widths[0])?;
@@ -634,6 +635,7 @@ mod tests {
                 for mode in 0..=4 {
                     let m = parse(&fixture(utf8, mode, width)).unwrap();
                     assert_eq!(m.name, "ミク");
+                    assert_eq!(m.vertices[0].qdef, mode == 4);
                     if mode == 3 {
                         let sdef = m.vertices[0].sdef.unwrap();
                         assert_eq!(sdef.center, Vec3::new(1., 2., 3.));

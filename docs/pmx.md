@@ -24,8 +24,7 @@ not establish visual or behavioral equivalence with MikuMikuDance.
 ## Approximations and missing evaluation
 
 SDEF retains its center and radius vectors and uses spherical interpolation of
-the two bone rotations with weighted transformed anchors. QDEF weights are
-still evaluated using ordinary linear blend skinning and will differ from MMD.
+the two bone rotations with weighted transformed anchors. QDEF uses normalized dual-quaternion blending for up to four bone transforms.
 Additional UV channels are read and discarded.
 
 Material names and comments are not retained. Double-sided parameters control back-face culling in the shared renderer. Sphere mode 3 requires additional
@@ -86,5 +85,29 @@ The formula was cross-checked against
 [saba's independent implementation](https://github.com/benikabocha/saba/blob/master/src/Saba/Model/MMD/PMXModel.cpp),
 not recovered from the original Windows MMD executable. The synthetic fixtures
 establish mathematical behavior; real-model visual parity remains unverified.
-Bone scale/shear, QDEF, append transforms and full material/bone morph evaluation
+Bone scale/shear, append transforms and full material/bone morph evaluation
 are outside this change.
+
+## QDEF implementation boundary
+
+PMX 2.1 mode 4 is retained as QDEF rather than reduced to BDEF4. The shared CPU
+path converts inverse-bind-adjusted rigid bone transforms into dual quaternions,
+aligns both quaternion components to the hemisphere of the first positive-weight
+influence, blends and normalizes them, then transforms morphed positions and
+rotates normals. Missing zero-weight influences are ignored. A degenerate real
+blend below length 1e-8 falls back to the existing linear path rather than
+producing a non-finite pose.
+
+This is an independent implementation of rigid dual-quaternion blending, with
+formula references from [Kavan et al.](https://users.cs.utah.edu/~ladislav/dq/index.html)
+and a behavior cross-check against [saba](https://github.com/benikabocha/saba/blob/master/src/Saba/Model/MMD/PMXModel.cpp).
+It does not support bone scale/shear or claim bit-identical behavior with Windows
+MMD. Hemisphere choices at exactly 180 degrees and degenerate blends still need
+original-runtime comparison.
+
+Tests cover four influences, rest/end weights, bind translations, common rotations,
+rotation/translation coupling, quaternion sign alignment, a zero-weight leading
+influence, normals and morph ordering. The original MIT-licensed
+[PMX/VMD cylinder example](../examples/qdef/) preserves radius 3 at 120 degrees
+of twist; the same fixture evaluated with linear blending shrinks its middle
+ring to radius 1.5. Real-character Windows MMD frame comparisons remain outstanding.

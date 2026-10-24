@@ -70,6 +70,8 @@ pub struct Vertex {
     /// PMD edge-disable flag converted to 0/1; PMX per-vertex edge multiplier.
     pub edge_scale: f32,
     pub sdef: Option<Sdef>,
+    /// PMX 2.1 dual-quaternion skinning; false for PMD/BDEF/SDEF.
+    pub qdef: bool,
 }
 #[derive(Clone, Debug, Default)]
 pub struct Material {
@@ -150,6 +152,7 @@ impl Model {
                 weights: [weight as f32 / 100.0, 1.0 - weight as f32 / 100.0, 0.0, 0.0],
                 edge_scale,
                 sdef: None,
+                qdef: false,
             });
         }
         let n = r.count(2)?;

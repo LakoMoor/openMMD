@@ -59,3 +59,7 @@ Captured on macOS with the outline pass enabled and the model, motion and camera
 ## Synthetic SDEF example
 
 [Two-bone PMX strip and VMD bend](sdef/) are original MIT-licensed test assets for checking spherical deformation without downloading a character model.
+
+## Synthetic QDEF example
+
+[PMX 2.1 cylinder and VMD twist](qdef/) are original MIT-licensed assets for checking radius preservation under dual-quaternion skinning.

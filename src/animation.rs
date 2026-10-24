@@ -1,5 +1,5 @@
 use crate::format::{BoneKey, Model, Motion};
-use glam::{Mat4, Quat, Vec3};
+use glam::{Mat4, Quat, Vec3, Vec4};
 
 /// Solve x(t) of the VMD cubic Bezier and return y(t).
 pub fn bezier(x: f32, control: [u8; 4]) -> f32 {
@@ -218,10 +218,22 @@ impl Pose {
             .zip(&model.bones)
             .map(|(m, b)| *m * Mat4::from_translation(-b.position))
             .collect();
-        let rotations: Vec<_> = if model.vertices.iter().any(|v| v.sdef.is_some()) {
+        let rotations: Vec<_> = if model.vertices.iter().any(|v| v.sdef.is_some() || v.qdef) {
             globals
                 .iter()
                 .map(|m| Quat::from_mat4(m).normalize())
+                .collect()
+        } else {
+            Vec::new()
+        };
+        let duals: Vec<_> = if model.vertices.iter().any(|v| v.qdef) {
+            matrices
+                .iter()
+                .zip(&rotations)
+                .map(|(m, &rotation)| {
+                    let t = m.w_axis;
+                    (Quat::from_xyzw(t.x, t.y, t.z, 0.) * rotation) * 0.5
+                })
                 .collect()
         } else {
             Vec::new()
@@ -253,6 +265,40 @@ impl Pose {
                         + matrices[i0].transform_point3(anchor0) * w0
                         + matrices[i1].transform_point3(anchor1) * w1;
                     return (position, (rotation * v.normal).normalize_or_zero());
+                }
+                if v.qdef {
+                    let reference = v.weights.iter().position(|&w| w > 0.).unwrap_or(0);
+                    let reference = rotations[v.bones[reference] as usize];
+                    let mut real = Vec4::ZERO;
+                    let mut dual = Vec4::ZERO;
+                    for (&bone, &weight) in v.bones.iter().zip(&v.weights) {
+                        if weight == 0. {
+                            continue;
+                        }
+                        let i = bone as usize;
+                        let signed_weight = if reference.dot(rotations[i]) < 0. {
+                            -weight
+                        } else {
+                            weight
+                        };
+                        real += Vec4::from_array(rotations[i].to_array()) * signed_weight;
+                        dual += Vec4::from_array(duals[i].to_array()) * signed_weight;
+                    }
+                    let length = real.length();
+                    if length > 1e-8 {
+                        real /= length;
+                        dual /= length;
+                        dual -= real * real.dot(dual);
+                        let rotation = Quat::from_array(real.to_array());
+                        let translation = Quat::from_array(dual.to_array()) * rotation.conjugate();
+                        let translation =
+                            Vec3::new(translation.x, translation.y, translation.z) * 2.;
+                        return (
+                            rotation * p + translation,
+                            (rotation * v.normal).normalize_or_zero(),
+                        );
+                    }
+                    // Degenerate blend: retain the existing bounded linear path.
                 }
                 let mut position = Vec3::ZERO;
                 let mut normal = Vec3::ZERO;
