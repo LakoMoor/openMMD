@@ -10,7 +10,8 @@ not establish visual or behavioral equivalence with MikuMikuDance.
 - All six independently sized index categories (1, 2 or 4 bytes), unsigned
   vertex indices and signed nullable object references.
 - Positions, normals, base UVs, triangle indices and material draw ranges.
-- Diffuse RGBA, ambient color and diffuse texture references.
+- Diffuse RGBA, ambient/specular colors, shininess, diffuse/sphere/toon texture references.
+- Drawing and edge parameters are retained. See [rendering](rendering.md) for runtime limits.
 - Four-influence BDEF1/BDEF2/BDEF4 linear skinning. Weights must be finite,
   nonnegative, and sum to one within 0.01; accepted weights are normalized.
 - Rest positions and parent relationships, including parents declared later
@@ -26,8 +27,9 @@ SDEF parameters and QDEF weights are read; both are currently evaluated using
 ordinary linear blend skinning. SDEF and QDEF deformation will differ from MMD.
 Additional UV channels are read and discarded.
 
-Material names, specular parameters, drawing flags, outline parameters, sphere
-maps, toon selection and material comments are not retained in the shared model.
+Material names and comments are not retained. Double-sided and outline parameters
+are retained but do not yet control rasterization. Sphere mode 3 requires additional
+UVs and is retained with a runtime warning rather than rendered.
 Bone flags, transform ordering, append rotation/translation, fixed/local axes,
 external parent transforms and post-physics transforms are read but not retained
 or evaluated. This can change animation substantially even for a valid mesh.

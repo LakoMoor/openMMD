@@ -1,0 +1,41 @@
+{
+  "reference_video": {
+    "url": "https://www.youtube.com/watch?v=QWlSmG9qApk",
+    "title": "【MMD】どっと式初音ミクでMONSTER full ver.【4K 60fps】【ロッキンストーン】",
+    "author": "Ryuki M426 MMD",
+    "identity_source": "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=QWlSmG9qApk&format=json",
+    "credits_mirror": "https://www.nicozon.net/tag/どっと式初音ミク/v/d/1",
+    "model_source": "https://3d.nicovideo.jp/works/td35863",
+    "motion_camera_source": "https://www.youtube.com/watch?v=sb65Y14sqDg",
+    "stage_source": "https://www.nicovideo.jp/watch/sm22610620",
+    "accessories_source": "https://seiga.nicovideo.jp/seiga/im4388704",
+    "effects": ["ExcellentShadow2", "CheapLens", "HgSAO", "o_SelfOverlay_Soft", "PowerDOF", "likelooksY", "A-screen", "AutoLuminous", "WorkingFloor2"],
+    "status": "Video identity verified through YouTube oEmbed; asset credits found in a description mirror. Original asset archives and terms have not been verified. No automatic download or redistribution. MME/AviUtl effects are not implemented in openMMD."
+  },
+  "examples": [
+    {
+      "name": "Miku v2 + WAVEFILE",
+      "kind": "model, motion, camera",
+      "source": "https://github.com/mrdoob/three.js/tree/r170/examples/models/mmd",
+      "model_author": "Animasa / MMD distribution; character Crypton Future Media",
+      "motion_author": "hino",
+      "camera_author": "doramata",
+      "usage_notices": ["miku/readme_miku_v2.txt", "vmds/readme_wavefile.txt", "vmds/readme_wavefile_camera.txt"],
+      "fetch": "python3 scripts/fetch_examples.py",
+      "status": "Pinned local test set; not bundled in packages or hosted by this site. WAVEFILE motion notice allows modification and redistribution, requires permission for commercial use. Camera notice allows modified redistribution and prohibits R-18 use. Character/model terms also apply. No audio included."
+    },
+    {
+      "name": "Remote Control stage and PMM scene",
+      "kind": "stage, PMM, effects",
+      "source": "https://www.deviantart.com/luciing/art/MMD-Remote-Control-Stage-DL-1144434608",
+      "status": "Author page describes stage animation, PMM configuration and effects. Noncommercial and attribution restrictions; underlying SEGA assets and effect authors have separate rights. Manual author download only; full scene compatibility is unverified."
+    },
+    {
+      "name": "Helltaker-like dance",
+      "kind": "motion and accessory candidate",
+      "source": "https://bowlroll.net/file/243140",
+      "author_video": "https://www.nicovideo.jp/watch/sm37987904",
+      "status": "Distribution page exists. Video-description mirror labels the motion CC0; archive and author terms still require verification. No bypass of login/password requirements and no automatic download."
+    }
+  ]
+}

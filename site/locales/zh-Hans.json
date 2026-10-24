@@ -100,7 +100,6 @@
   "DESKTOP / BUILD FROM SOURCE": "桌面版 / 从源码构建",
   "Copy ⧉": "复制 ⧉",
   "Platform dependencies & setup guide": "平台依赖与安装指南",
-  "Requires the Rust toolchain. Prebuilt downloads are not available yet.": "需要 Rust 工具链，暂未提供预构建版本下载。",
   "An independent implementation, in active development.": "独立实现，持续开发中。",
   "Not affiliated with the original MikuMikuDance project.": "与原 MikuMikuDance 项目无关联。",
   "Pictured models belong to their respective owners. Model assets are not bundled.": "图中模型归各自权利人所有，项目不附带模型素材。",
@@ -132,5 +131,8 @@
   "Enlarge the PMM scene screenshot": "放大 PMM 场景截图",
   "A PMM scene playing in openMMD with camera and lighting controls": "在 openMMD 中播放的 PMM 场景，带相机和灯光控制",
   "Copy setup commands": "复制安装命令",
-  "Close screenshot": "关闭截图"
+  "Close screenshot": "关闭截图",
+  "Source builds require Rust. Preview packages are unsigned.": "从源码构建需要 Rust。预览包未经签名。",
+  "Download desktop previews ↗": "下载桌面预览版 ↗",
+  "Models and example scenes ↗": "模型与示例场景 ↗"
 }

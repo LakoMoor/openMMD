@@ -4,7 +4,7 @@ use crate::{
     editor::{self, History},
     format::{Bone, Material, Model, Motion, Vertex},
     pmm::{PmmProject, PmmSceneTracks},
-    renderer::{self, Renderer, SceneCamera},
+    renderer::{Renderer, SceneCamera},
     vpd,
 };
 use anyhow::{bail, ensure, Context, Result};
@@ -1095,17 +1095,8 @@ impl eframe::App for WebApp {
                 .collect();
             let scale = ctx.pixels_per_point();
             let size = [(available.x * scale) as u32, (available.y * scale) as u32];
-            let mut camera = SceneCamera {
-                view_projection: renderer::orbit_projection(
-                    size,
-                    self.yaw,
-                    self.pitch,
-                    self.distance,
-                    self.focus,
-                ),
-                light_direction: Vec3::new(-0.4, 0.8, -0.6),
-                light_color: Vec3::ONE,
-            };
+            let mut camera =
+                SceneCamera::orbit(size, self.yaw, self.pitch, self.distance, self.focus);
             if let Some(scene) = &self.scene {
                 if self.follow_camera {
                     if let Some(k) = scene.camera_at(self.frame) {
@@ -1118,6 +1109,7 @@ impl eframe::App for WebApp {
                                     .and_then(|b| p.globals(&s.model).get(b).copied())
                             });
                         camera.view_projection = crate::camera::projection(&k, size, parent);
+                        (camera.view, camera.eye) = crate::camera::view_eye(&k, parent);
                     }
                 }
                 if let Some(k) = scene.light_at(self.frame) {
@@ -1128,6 +1120,7 @@ impl eframe::App for WebApp {
             if self.follow_camera {
                 if let Some(key) = self.vmd_scene.camera_at(self.frame) {
                     camera.view_projection = crate::camera::projection(&key, size, None);
+                    (camera.view, camera.eye) = crate::camera::view_eye(&key, None);
                 }
             }
             if let Some(key) = self.vmd_scene.light_at(self.frame) {
@@ -1290,6 +1283,8 @@ fn demo_model() -> (Model, Motion) {
             texture: String::new(),
             start,
             count: model.indices.len() as u32 - start,
+            double_sided: true,
+            ..Default::default()
         });
     }
     let mut motion = Motion {

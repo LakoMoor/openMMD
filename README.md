@@ -50,7 +50,8 @@ Shift+drag перемещает её цель. Все загруженные м�
   Self-shadow, видимость, IK-switch keys и неизвестные дополнительные данные
   сохраняются при повторном экспорте. [Подробности VMD](docs/vmd.md).
 - CPU skinning и CCD IK с приближёнными ограничениями коленей PMD.
-- Viewport wgpu с depth buffer, diffuse-текстурами и упрощённым toon-шейдером.
+- Viewport wgpu: diffuse/toon/sphere-текстуры, ambient/specular и 4× MSAA.
+  [Реализованные материалы и оставшиеся отличия](docs/rendering.md).
 - Выбор модели/кости/морфа, таймлайн, просмотр и правка ключей, Undo/Redo
   для анимации выбранной модели.
 - Чтение костной/морф-анимации существующих PMM v1/v2. Для v1 нужны исходные
@@ -135,3 +136,13 @@ MMD Tools; ссылки и границы проверки указаны в д�
 
 Exact behavior is the target, but the editor is not yet a 1:1 port.
 [Reference identity, binary findings and remaining acceptance work](docs/parity.md).
+
+## Downloadable previews and reference scenes
+
+[Desktop preview builds](https://github.com/LakoMoor/openMMD/releases) include
+Windows, Linux and Apple Silicon macOS executables with SHA-256 checksums.
+The release workflow builds and tests each platform before publishing packages.
+
+[Models, motions and scenes](examples/README.md) include a pinned local fetcher
+for Miku v2 + WAVEFILE, author notices, and source links for the MONSTER reference.
+These assets are not covered by this repository's MIT license and are not bundled.

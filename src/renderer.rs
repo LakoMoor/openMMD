@@ -1,5 +1,5 @@
 use crate::{animation::Pose, format::Model};
-use anyhow::{Context, Result};
+use anyhow::Result;
 use eframe::{egui, egui_wgpu, wgpu};
 use glam::{Mat4, Vec3};
 use std::path::Path;
@@ -17,6 +17,26 @@ pub struct SceneCamera {
     pub view_projection: Mat4,
     pub light_direction: Vec3,
     pub light_color: Vec3,
+    pub view: Mat4,
+    pub eye: Vec3,
+}
+impl SceneCamera {
+    pub fn orbit(size: [u32; 2], yaw: f32, pitch: f32, distance: f32, focus: Vec3) -> Self {
+        let eye = focus
+            + distance
+                * Vec3::new(
+                    yaw.sin() * pitch.cos(),
+                    pitch.sin(),
+                    -yaw.cos() * pitch.cos(),
+                );
+        Self {
+            view_projection: orbit_projection(size, yaw, pitch, distance, focus),
+            view: Mat4::look_at_lh(eye, focus, Vec3::Y),
+            eye,
+            light_direction: Vec3::new(-0.4, 0.8, -0.6),
+            light_color: Vec3::ONE,
+        }
+    }
 }
 pub fn orbit_projection(size: [u32; 2], yaw: f32, pitch: f32, distance: f32, focus: Vec3) -> Mat4 {
     let eye = focus
@@ -49,12 +69,21 @@ pub struct Renderer {
     vertex: Option<wgpu::Buffer>,
     index: Option<wgpu::Buffer>,
     output: wgpu::Texture,
+    multisample: wgpu::Texture,
     depth: wgpu::Texture,
     pub texture_id: egui::TextureId,
     size: [u32; 2],
     pub warnings: Vec<String>,
 }
 fn target(device: &wgpu::Device, size: [u32; 2], format: wgpu::TextureFormat) -> wgpu::Texture {
+    target_multisample(device, size, format, 1)
+}
+fn target_multisample(
+    device: &wgpu::Device,
+    size: [u32; 2],
+    format: wgpu::TextureFormat,
+    samples: u32,
+) -> wgpu::Texture {
     device.create_texture(&wgpu::TextureDescriptor {
         label: Some("viewport target"),
         size: wgpu::Extent3d {
@@ -63,12 +92,16 @@ fn target(device: &wgpu::Device, size: [u32; 2], format: wgpu::TextureFormat) ->
             depth_or_array_layers: 1,
         },
         mip_level_count: 1,
-        sample_count: 1,
+        sample_count: samples,
         dimension: wgpu::TextureDimension::D2,
         format,
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-            | wgpu::TextureUsages::TEXTURE_BINDING
-            | wgpu::TextureUsages::COPY_SRC,
+        usage: if samples == 1 {
+            wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::COPY_SRC
+        } else {
+            wgpu::TextureUsages::RENDER_ATTACHMENT
+        },
         view_formats: if format == wgpu::TextureFormat::Rgba8UnormSrgb {
             &[wgpu::TextureFormat::Rgba8Unorm]
         } else {
@@ -81,7 +114,7 @@ impl Renderer {
         let device = &state.device;
         let camera_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("camera"),
-            size: 96,
+            size: 176,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -107,10 +140,10 @@ impl Renderer {
             }],
         });
         let texture_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("material layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
+            label: Some("MMD material layout"),
+            entries: &[0, 2, 3]
+                .map(|binding| wgpu::BindGroupLayoutEntry {
+                    binding,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
                         sample_type: wgpu::TextureSampleType::Float { filterable: true },
@@ -118,14 +151,25 @@ impl Renderer {
                         multisampled: false,
                     },
                     count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
+                })
+                .into_iter()
+                .chain([1, 4].map(|binding| wgpu::BindGroupLayoutEntry {
+                    binding,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count: None,
-                },
-            ],
+                }))
+                .chain([wgpu::BindGroupLayoutEntry {
+                    binding: 5,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }])
+                .collect::<Vec<_>>(),
         });
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("model pipeline layout"),
@@ -140,11 +184,12 @@ impl Renderer {
             label:Some("PMD mesh"),layout:Some(&layout),vertex:wgpu::VertexState { module:&shader,entry_point:Some("vs_main"),compilation_options:Default::default(),buffers:&[wgpu::VertexBufferLayout{array_stride:48,step_mode:wgpu::VertexStepMode::Vertex,attributes:&wgpu::vertex_attr_array![0=>Float32x3,1=>Float32x3,2=>Float32x2,3=>Float32x4]}] },
             fragment:Some(wgpu::FragmentState{module:&shader,entry_point:Some("fs_main"),compilation_options:Default::default(),targets:&[Some(wgpu::ColorTargetState { format:wgpu::TextureFormat::Rgba8UnormSrgb,blend:Some(wgpu::BlendState::ALPHA_BLENDING),write_mask:wgpu::ColorWrites::ALL })]}),
             primitive:wgpu::PrimitiveState { cull_mode:None,..Default::default() },
-            depth_stencil:Some(wgpu::DepthStencilState { format:wgpu::TextureFormat::Depth32Float,depth_write_enabled:Some(true),depth_compare:Some(wgpu::CompareFunction::Less),stencil:Default::default(),bias:Default::default() }),multisample:Default::default(),multiview_mask:None,cache:None,
+            depth_stencil:Some(wgpu::DepthStencilState { format:wgpu::TextureFormat::Depth32Float,depth_write_enabled:Some(true),depth_compare:Some(wgpu::CompareFunction::Less),stencil:Default::default(),bias:Default::default() }),multisample:wgpu::MultisampleState{count:4,..Default::default()},multiview_mask:None,cache:None,
         });
         let size = [800, 600];
         let output = target(device, size, wgpu::TextureFormat::Rgba8UnormSrgb);
-        let depth = target(device, size, wgpu::TextureFormat::Depth32Float);
+        let multisample = target_multisample(device, size, wgpu::TextureFormat::Rgba8UnormSrgb, 4);
+        let depth = target_multisample(device, size, wgpu::TextureFormat::Depth32Float, 4);
         let texture_id = state.renderer.write().register_native_texture(
             device,
             &output.create_view(&wgpu::TextureViewDescriptor {
@@ -153,7 +198,14 @@ impl Renderer {
             }),
             wgpu::FilterMode::Linear,
         );
-        let white = Self::texture(&state, &texture_layout, &[255; 4], 1, 1);
+        let white = Self::material_group(
+            &state,
+            &texture_layout,
+            &image::RgbaImage::from_pixel(1, 1, image::Rgba([255; 4])),
+            &image::RgbaImage::from_pixel(1, 1, image::Rgba([255; 4])),
+            &image::RgbaImage::from_pixel(1, 1, image::Rgba([255; 4])),
+            &[0.; 12],
+        );
         Self {
             state,
             pipeline,
@@ -165,58 +217,94 @@ impl Renderer {
             vertex: None,
             index: None,
             output,
+            multisample,
             depth,
             texture_id,
             size,
             warnings: Vec::new(),
         }
     }
-    fn texture(
+    fn texture_view(state: &egui_wgpu::RenderState, image: &image::RgbaImage) -> wgpu::TextureView {
+        state
+            .device
+            .create_texture_with_data(
+                &state.queue,
+                &wgpu::TextureDescriptor {
+                    label: Some("MMD texture"),
+                    size: wgpu::Extent3d {
+                        width: image.width(),
+                        height: image.height(),
+                        depth_or_array_layers: 1,
+                    },
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: wgpu::TextureFormat::Rgba8Unorm,
+                    usage: wgpu::TextureUsages::TEXTURE_BINDING,
+                    view_formats: &[],
+                },
+                wgpu::util::TextureDataOrder::LayerMajor,
+                image,
+            )
+            .create_view(&Default::default())
+    }
+    fn material_group(
         state: &egui_wgpu::RenderState,
         layout: &wgpu::BindGroupLayout,
-        bytes: &[u8],
-        width: u32,
-        height: u32,
+        diffuse: &image::RgbaImage,
+        sphere: &image::RgbaImage,
+        toon: &image::RgbaImage,
+        values: &[f32; 12],
     ) -> wgpu::BindGroup {
-        let texture = state.device.create_texture_with_data(
-            &state.queue,
-            &wgpu::TextureDescriptor {
-                label: Some("material texture"),
-                size: wgpu::Extent3d {
-                    width,
-                    height,
-                    depth_or_array_layers: 1,
-                },
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING,
-                view_formats: &[],
-            },
-            wgpu::util::TextureDataOrder::LayerMajor,
-            bytes,
-        );
-        let sampler = state.device.create_sampler(&wgpu::SamplerDescriptor {
+        let diffuse = Self::texture_view(state, diffuse);
+        let sphere = Self::texture_view(state, sphere);
+        let toon = Self::texture_view(state, toon);
+        let repeat = state.device.create_sampler(&wgpu::SamplerDescriptor {
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
             address_mode_u: wgpu::AddressMode::Repeat,
             address_mode_v: wgpu::AddressMode::Repeat,
             ..Default::default()
         });
+        let clamp = state.device.create_sampler(&wgpu::SamplerDescriptor {
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            ..Default::default()
+        });
+        let uniform = state
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("MMD material values"),
+                contents: bytemuck::cast_slice(values),
+                usage: wgpu::BufferUsages::UNIFORM,
+            });
         state.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("material"),
+            label: Some("MMD material"),
             layout,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(
-                        &texture.create_view(&Default::default()),
-                    ),
+                    resource: wgpu::BindingResource::TextureView(&diffuse),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&sampler),
+                    resource: wgpu::BindingResource::Sampler(&repeat),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&sphere),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::TextureView(&toon),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: wgpu::BindingResource::Sampler(&clamp),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 5,
+                    resource: uniform.as_entire_binding(),
                 },
             ],
         })
@@ -241,53 +329,67 @@ impl Renderer {
         self.materials.clear();
         for &(model, path) in models {
             for material in &model.materials {
-                let diffuse = material.texture.split('*').find(|s| {
-                    !s.is_empty()
-                        && !s.to_lowercase().ends_with(".sph")
-                        && !s.to_lowercase().ends_with(".spa")
-                });
-                let group = if let Some(name) = diffuse {
-                    let image_path = path
-                        .parent()
-                        .unwrap_or(Path::new("."))
-                        .join(name.replace('\\', "/"));
-                    let decoded = loader(&image_path)
-                        .context("texture file not supplied")
-                        .and_then(|bytes| {
-                            if let Ok(format) = image::ImageFormat::from_path(&image_path) {
-                                Ok(image::load_from_memory_with_format(&bytes, format)?)
-                            } else {
-                                Ok(image::load_from_memory(&bytes)?)
+                let mut read_image = |name: &str, shared: bool| -> Option<image::RgbaImage> {
+                    if name.is_empty() {
+                        return None;
+                    }
+                    let parent = path.parent().unwrap_or(Path::new("."));
+                    let mut candidates = vec![parent.join(name.replace('\\', "/"))];
+                    if shared {
+                        candidates.push(parent.join("../../Data").join(name));
+                        candidates.push(parent.join("../Data").join(name));
+                    }
+                    for candidate in &candidates {
+                        if let Some(bytes) = loader(candidate) {
+                            match image::load_from_memory(&bytes) {
+                                Ok(mut img) => {
+                                    let limit = self.state.device.limits().max_texture_dimension_2d;
+                                    if img.width() > limit || img.height() > limit {
+                                        img = img.thumbnail(limit, limit);
+                                        self.warnings.push(format!(
+                                            "Resized texture {} to GPU limit {limit}",
+                                            candidate.display()
+                                        ));
+                                    }
+                                    return Some(img.to_rgba8());
+                                }
+                                Err(error) => self
+                                    .warnings
+                                    .push(format!("Texture {}: {error}", candidate.display())),
                             }
-                        })
-                        .with_context(|| format!("texture {}", image_path.display()));
-                    match decoded {
-                        Ok(mut img) => {
-                            let limit = self.state.device.limits().max_texture_dimension_2d;
-                            if img.width() > limit || img.height() > limit {
-                                self.warnings.push(format!(
-                                    "Resized texture {} to GPU limit {limit}",
-                                    image_path.display()
-                                ));
-                                img = img.thumbnail(limit, limit);
-                            }
-                            let img = img.to_rgba8();
-                            Self::texture(
-                                &self.state,
-                                &self.texture_layout,
-                                &img,
-                                img.width(),
-                                img.height(),
-                            )
-                        }
-                        Err(e) => {
-                            self.warnings.push(format!("{e}"));
-                            Self::texture(&self.state, &self.texture_layout, &[255; 4], 1, 1)
                         }
                     }
-                } else {
-                    Self::texture(&self.state, &self.texture_layout, &[255; 4], 1, 1)
+                    self.warnings
+                        .push(format!("Missing texture {name}: using fallback"));
+                    None
                 };
+                let white = image::RgbaImage::from_pixel(1, 1, image::Rgba([255; 4]));
+                let diffuse = read_image(&material.texture, false).unwrap_or_else(|| white.clone());
+                let sphere = read_image(&material.sphere_texture, false);
+                let toon = read_image(&material.toon_texture, true);
+                let mut values = [0.; 12];
+                values[..3].copy_from_slice(&material.ambient.to_array());
+                values[4..7].copy_from_slice(&material.specular.to_array());
+                values[7] = material.shininess.max(0.);
+                values[8] = if sphere.is_some() && material.sphere_mode <= 2 {
+                    material.sphere_mode as f32
+                } else {
+                    0.
+                };
+                values[9] = if toon.is_some() { 1. } else { 0. };
+                if material.sphere_mode == 3 {
+                    self.warnings.push(
+                        "PMX sphere subtexture (extra UV) is retained but not rendered".into(),
+                    );
+                }
+                let group = Self::material_group(
+                    &self.state,
+                    &self.texture_layout,
+                    &diffuse,
+                    sphere.as_ref().unwrap_or(&white),
+                    toon.as_ref().unwrap_or(&white),
+                    &values,
+                );
                 self.materials.push(group);
             }
         }
@@ -322,11 +424,7 @@ impl Renderer {
         distance: f32,
         focus: Vec3,
     ) {
-        let camera = SceneCamera {
-            view_projection: orbit_projection(size, yaw, pitch, distance, focus),
-            light_direction: Vec3::new(-0.4, 0.8, -0.6),
-            light_color: Vec3::ONE,
-        };
+        let camera = SceneCamera::orbit(size, yaw, pitch, distance, focus);
         self.draw_scene_camera(models, size, &camera);
     }
     pub fn draw_scene_camera(
@@ -340,7 +438,9 @@ impl Renderer {
         if size != self.size {
             self.size = size;
             self.output = target(device, size, wgpu::TextureFormat::Rgba8UnormSrgb);
-            self.depth = target(device, size, wgpu::TextureFormat::Depth32Float);
+            self.multisample =
+                target_multisample(device, size, wgpu::TextureFormat::Rgba8UnormSrgb, 4);
+            self.depth = target_multisample(device, size, wgpu::TextureFormat::Depth32Float, 4);
             self.state
                 .renderer
                 .write()
@@ -354,10 +454,12 @@ impl Renderer {
                     self.texture_id,
                 );
         }
-        let mut uniform = [0f32; 24];
+        let mut uniform = [0f32; 44];
         uniform[..16].copy_from_slice(&camera.view_projection.to_cols_array());
         uniform[16..19].copy_from_slice(&camera.light_direction.to_array());
         uniform[20..23].copy_from_slice(&camera.light_color.to_array());
+        uniform[24..40].copy_from_slice(&camera.view.to_cols_array());
+        uniform[40..43].copy_from_slice(&camera.eye.to_array());
         self.state
             .queue
             .write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&uniform));
@@ -389,14 +491,15 @@ impl Renderer {
         }
         let mut encoder = device.create_command_encoder(&Default::default());
         {
-            let view = self.output.create_view(&Default::default());
+            let resolve = self.output.create_view(&Default::default());
+            let view = self.multisample.create_view(&Default::default());
             let depth = self.depth.create_view(&Default::default());
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("model viewport"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     depth_slice: None,
-                    resolve_target: None,
+                    resolve_target: Some(&resolve),
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
                             r: 0.012,
@@ -586,5 +689,57 @@ mod tests {
             Vec3::new(0., 10., 0.),
         );
         assert_eq!(read_output(&renderer), data);
+        // Render constant material probes so the shader's gamma, sphere modes and toon
+        // bindings are checked on the GPU rather than inferred from the CPU importer.
+        let mut encoded = std::io::Cursor::new(Vec::new());
+        image::DynamicImage::ImageRgba8(image::RgbaImage::from_pixel(
+            1,
+            1,
+            image::Rgba([51, 102, 153, 255]),
+        ))
+        .write_to(&mut encoded, image::ImageFormat::Png)
+        .unwrap();
+        for (mode, toon, expected) in [
+            (0, false, [51_u8, 51, 51]),
+            (1, false, [10, 20, 31]),
+            (2, false, [102, 153, 204]),
+            (0, true, [10, 20, 31]),
+        ] {
+            let mut probe = model.clone();
+            for material in &mut probe.materials {
+                material.diffuse = [0., 0., 0., 1.];
+                material.ambient = Vec3::splat(0.2);
+                material.specular = Vec3::ZERO;
+                material.texture.clear();
+                material.sphere_texture = "probe.png".into();
+                material.sphere_mode = mode;
+                material.toon_texture = if toon {
+                    "probe.png".into()
+                } else {
+                    String::new()
+                };
+            }
+            renderer
+                .load_scene_with_textures(&[(&probe, path)], |_| Some(encoded.get_ref().clone()))
+                .unwrap();
+            renderer.draw_scene(
+                &[(&probe, &pose)],
+                [512, 512],
+                0.,
+                0.12,
+                38.,
+                Vec3::new(0., 10., 0.),
+            );
+            let output = read_output(&renderer);
+            let matches = output
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .filter(|pixel| {
+                    (0..3).all(|channel| pixel[channel].abs_diff(expected[channel]) <= 1)
+                })
+                .count();
+            assert!(matches>5000,"mode {mode}, toon {toon}: only {matches} pixels matched the expected material color");
+        }
     }
 }

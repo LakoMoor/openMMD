@@ -141,7 +141,7 @@ impl App {
             scene_undo: vec![],
             scene_redo: vec![],
         };
-        if let Some(path) = std::env::args_os().nth(1) {
+        for path in std::env::args_os().skip(1) {
             let result = app.open(Path::new(&path));
             app.report(result);
         }
@@ -1078,17 +1078,13 @@ impl eframe::App for App {
                 .collect();
             let scale = ctx.pixels_per_point();
             let size = [(available.x * scale) as u32, (available.y * scale) as u32];
-            let mut camera = openmmd::renderer::SceneCamera {
-                view_projection: openmmd::renderer::orbit_projection(
-                    size,
-                    self.yaw,
-                    self.pitch,
-                    self.distance,
-                    self.focus,
-                ),
-                light_direction: Vec3::new(-0.4, 0.8, -0.6),
-                light_color: Vec3::ONE,
-            };
+            let mut camera = openmmd::renderer::SceneCamera::orbit(
+                size,
+                self.yaw,
+                self.pitch,
+                self.distance,
+                self.focus,
+            );
             if self.follow_camera && (self.scene.is_some() || !self.vmd_scene.cameras.is_empty()) {
                 let key = &self.camera_edit;
                 let parent = usize::try_from(key.parent_model)
@@ -1100,6 +1096,7 @@ impl eframe::App for App {
                             .and_then(|bone| p.globals(&s.model).get(bone).copied())
                     });
                 camera.view_projection = openmmd::camera::projection(key, size, parent);
+                (camera.view, camera.eye) = openmmd::camera::view_eye(key, parent);
             }
             if self.use_scene_light && (self.scene.is_some() || !self.vmd_scene.lights.is_empty()) {
                 camera.light_color = self.light_edit.color;

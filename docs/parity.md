@@ -113,3 +113,9 @@ The current macOS host has no Wine or Windows VM runtime available. Runtime
 comparison must be performed on a suitable Windows environment; static analysis
 and format round trips cannot substitute for it. Work can continue on verified
 static behavior and the remaining implementation without claiming final parity.
+
+## Material pipeline progress
+
+See [rendering](rendering.md) for native shader resource observations, the new
+material bindings, GPU probes and remaining visual differences. No claim of
+full MMD/MME or reference-video equivalence is made.

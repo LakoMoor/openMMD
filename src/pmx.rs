@@ -217,10 +217,12 @@ pub fn parse(bytes: &[u8]) -> Result<Model> {
         r.text()?;
         r.text()?;
         let diffuse = [r.f32()?, r.f32()?, r.f32()?, r.f32()?];
-        r.floats(4)?;
+        let specular = r.v3()?;
+        let shininess = r.f32()?;
         let ambient = r.v3()?;
-        r.u8()?;
-        r.floats(5)?;
+        let flags = r.u8()?;
+        let edge_color = [r.f32()?, r.f32()?, r.f32()?, r.f32()?];
+        let edge_size = r.f32()?;
         let ti = r.index(1)?;
         ensure!(
             ti >= -1 && (ti < 0 || (ti as usize) < textures.len()),
@@ -236,17 +238,25 @@ pub fn parse(bytes: &[u8]) -> Result<Model> {
             sphere >= -1 && (sphere < 0 || (sphere as usize) < textures.len()),
             "invalid PMX sphere texture index"
         );
-        ensure!(r.u8()? <= 3, "invalid PMX sphere mode");
-        match r.u8()? {
+        let sphere_mode = r.u8()?;
+        ensure!(sphere_mode <= 3, "invalid PMX sphere mode");
+        let toon_texture = match r.u8()? {
             0 => {
                 let toon = r.index(1)?;
                 ensure!(
                     toon >= -1 && (toon < 0 || (toon as usize) < textures.len()),
                     "invalid PMX toon index"
                 );
+                if toon < 0 {
+                    String::new()
+                } else {
+                    textures[toon as usize].clone()
+                }
             }
             1 => {
-                ensure!(r.u8()? < 10, "invalid shared toon");
+                let toon = r.u8()?;
+                ensure!(toon < 10, "invalid shared toon");
+                format!("toon{:02}.bmp", toon + 1)
             }
             _ => bail!("invalid PMX toon mode"),
         };
@@ -257,6 +267,19 @@ pub fn parse(bytes: &[u8]) -> Result<Model> {
         materials.push(Material {
             diffuse,
             ambient,
+            specular,
+            shininess,
+            sphere_texture: if sphere < 0 {
+                String::new()
+            } else {
+                textures[sphere as usize].clone()
+            },
+            sphere_mode,
+            toon_texture,
+            double_sided: flags & 1 != 0,
+            edge_color,
+            edge_size,
+            edge_enabled: flags & 16 != 0,
             texture,
             start,
             count,

@@ -62,10 +62,20 @@ pub struct Vertex {
     pub bones: [u16; 4],
     pub weights: [f32; 4],
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Material {
     pub diffuse: [f32; 4],
     pub ambient: Vec3,
+    pub specular: Vec3,
+    pub shininess: f32,
+    pub sphere_texture: String,
+    /// 0=disabled, 1=multiply, 2=add, 3=PMX extra-UV subtexture (not rendered yet).
+    pub sphere_mode: u8,
+    pub toon_texture: String,
+    pub double_sided: bool,
+    pub edge_color: [f32; 4],
+    pub edge_size: f32,
+    pub edge_enabled: bool,
     pub texture: String,
     pub start: u32,
     pub count: u32,
@@ -143,17 +153,51 @@ impl Model {
         for _ in 0..n {
             let color = r.vec3()?;
             let alpha = r.f32()?;
-            r.f32()?;
-            r.vec3()?;
+            let shininess = r.f32()?;
+            let specular = r.vec3()?;
             let ambient = r.vec3()?;
-            r.u8()?;
-            r.u8()?;
+            let toon = r.u8()?;
+            ensure!(toon < 10 || toon == 255, "invalid PMD toon index");
+            let edge = r.u8()?;
             let count = r.u32()?;
-            let texture = r.text(20)?;
+            let names = r.text(20)?;
+            let sphere_texture = names
+                .split('*')
+                .find(|name| {
+                    let ext = name.to_ascii_lowercase();
+                    ext.ends_with(".sph") || ext.ends_with(".spa")
+                })
+                .unwrap_or("")
+                .to_owned();
+            let texture = names
+                .split('*')
+                .find(|name| !name.is_empty() && *name != sphere_texture)
+                .unwrap_or("")
+                .to_owned();
+            let sphere_mode = if sphere_texture.is_empty() {
+                0
+            } else if sphere_texture.to_ascii_lowercase().ends_with(".spa") {
+                2
+            } else {
+                1
+            };
             ensure!(count % 3 == 0, "non-triangular material");
             materials.push(Material {
                 diffuse: [color.x, color.y, color.z, alpha],
                 ambient,
+                specular,
+                shininess,
+                sphere_texture,
+                sphere_mode,
+                toon_texture: if toon == 255 {
+                    String::new()
+                } else {
+                    format!("toon{:02}.bmp", toon + 1)
+                },
+                double_sided: alpha < 1.,
+                edge_color: [0., 0., 0., 1.],
+                edge_size: 1.,
+                edge_enabled: edge != 0,
                 texture,
                 start,
                 count,
@@ -265,6 +309,40 @@ impl Model {
                     },
                     "invalid morph vertex"
                 );
+            }
+        }
+        // Optional PMD display/English-name extension followed by the ten toon filenames.
+        if r.pos < r.bytes.len() {
+            let display_morphs = r.u8()? as usize;
+            r.take(display_morphs * 2)?;
+            let groups = r.u8()? as usize;
+            r.take(groups * 50)?;
+            let displayed_bones = r.count(3)?;
+            r.take(displayed_bones * 3)?;
+            let english = r.u8()?;
+            ensure!(english <= 1, "invalid PMD English flag");
+            if english == 1 {
+                r.take(
+                    20 + 256 + bones.len() * 20 + morphs.len().saturating_sub(1) * 20 + groups * 50,
+                )?;
+            }
+            if r.pos < r.bytes.len() {
+                let mut toon_names = Vec::with_capacity(10);
+                for _ in 0..10 {
+                    toon_names.push(r.text(100)?);
+                }
+                for material in &mut materials {
+                    if let Some(index) = material
+                        .toon_texture
+                        .strip_prefix("toon")
+                        .and_then(|s| s.strip_suffix(".bmp"))
+                        .and_then(|s| s.parse::<usize>().ok())
+                    {
+                        if (1..=10).contains(&index) {
+                            material.toon_texture = toon_names[index - 1].clone();
+                        }
+                    }
+                }
             }
         }
         Ok(Self {

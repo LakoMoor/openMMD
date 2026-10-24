@@ -1,7 +1,7 @@
 //! MMD scene camera in left-handed coordinates with wgpu 0-to-1 depth.
 use crate::pmm::PmmCameraKey;
 use glam::{Mat4, Quat, Vec3};
-pub fn projection(key: &PmmCameraKey, size: [u32; 2], parent: Option<Mat4>) -> Mat4 {
+pub fn view_eye(key: &PmmCameraKey, parent: Option<Mat4>) -> (Mat4, Vec3) {
     let rotation = Quat::from_euler(
         glam::EulerRot::YXZ,
         -key.angle.y,
@@ -17,6 +17,10 @@ pub fn projection(key: &PmmCameraKey, size: [u32; 2], parent: Option<Mat4>) -> M
         target = parent.transform_point3(target);
         up = parent.transform_vector3(up).normalize_or_zero();
     }
+    (Mat4::look_at_lh(eye, target, up), eye)
+}
+pub fn projection(key: &PmmCameraKey, size: [u32; 2], parent: Option<Mat4>) -> Mat4 {
+    let distance = key.distance;
     let aspect = size[0].max(1) as f32 / size[1].max(1) as f32;
     let projection = if key.perspective {
         Mat4::perspective_lh(
@@ -57,7 +61,7 @@ pub fn projection(key: &PmmCameraKey, size: [u32; 2], parent: Option<Mat4>) -> M
             1.,
         ])
     };
-    projection * Mat4::look_at_lh(eye, target, up)
+    projection * view_eye(key, parent).0
 }
 #[cfg(test)]
 mod tests {

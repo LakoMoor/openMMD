@@ -1,0 +1,71 @@
+{
+  "commit": "beab9e845f9e5ae11d648f55b24a0e910b56a85a",
+  "files": [
+    {
+      "path": "LICENSE",
+      "source": "https://raw.githubusercontent.com/mrdoob/three.js/beab9e845f9e5ae11d648f55b24a0e910b56a85a/examples/models/mmd/LICENSE",
+      "bytes": 150,
+      "sha256": "1c5646b680414714087546e9cc6684901ed6ed5dbee63e34610d4b6cacdc6f80"
+    },
+    {
+      "path": "Readme.txt",
+      "source": "https://raw.githubusercontent.com/mrdoob/three.js/beab9e845f9e5ae11d648f55b24a0e910b56a85a/examples/models/mmd/Readme.txt",
+      "bytes": 1156,
+      "sha256": "7b34ff053cfbf42322977fe2b0e3f90492c83dac2a1a001f6f4b2561197a4225"
+    },
+    {
+      "path": "miku/readme.txt",
+      "source": "https://raw.githubusercontent.com/mrdoob/three.js/beab9e845f9e5ae11d648f55b24a0e910b56a85a/examples/models/mmd/miku/readme.txt",
+      "bytes": 203,
+      "sha256": "702a3f62567fc9c8becbdb47a73058683086ba75e236612a3e8e8d5486cd0a9e"
+    },
+    {
+      "path": "miku/readme_miku_v2.txt",
+      "source": "https://raw.githubusercontent.com/mrdoob/three.js/beab9e845f9e5ae11d648f55b24a0e910b56a85a/examples/models/mmd/miku/readme_miku_v2.txt",
+      "bytes": 19465,
+      "sha256": "6732866be1a712d7af142fcbf59f7e3bab8691ea472f86bb674020b13d51355a"
+    },
+    {
+      "path": "vmds/readme.txt",
+      "source": "https://raw.githubusercontent.com/mrdoob/three.js/beab9e845f9e5ae11d648f55b24a0e910b56a85a/examples/models/mmd/vmds/readme.txt",
+      "bytes": 681,
+      "sha256": "d3810b34182d9f7efd178430e60bacbf318122f26ab0b5ffb9bcf415583b27cd"
+    },
+    {
+      "path": "vmds/readme_wavefile.txt",
+      "source": "https://raw.githubusercontent.com/mrdoob/three.js/beab9e845f9e5ae11d648f55b24a0e910b56a85a/examples/models/mmd/vmds/readme_wavefile.txt",
+      "bytes": 1911,
+      "sha256": "49bedda39bb89a9bc1306058e2a97cfd19f61cf62a6ddc0d40d27b5915c26440"
+    },
+    {
+      "path": "vmds/readme_wavefile_camera.txt",
+      "source": "https://raw.githubusercontent.com/mrdoob/three.js/beab9e845f9e5ae11d648f55b24a0e910b56a85a/examples/models/mmd/vmds/readme_wavefile_camera.txt",
+      "bytes": 1016,
+      "sha256": "db55505e286bdb871f5bc83a224446a6171ff0699e48e8b17551809d3e42a641"
+    },
+    {
+      "path": "miku/miku_v2.pmd",
+      "source": "https://raw.githubusercontent.com/mrdoob/three.js/beab9e845f9e5ae11d648f55b24a0e910b56a85a/examples/models/mmd/miku/miku_v2.pmd",
+      "bytes": 712126,
+      "sha256": "45a5a2fb897266a1b371b30cf53ed9435d375ddea9fce7f095bba2739b9bdae5"
+    },
+    {
+      "path": "miku/eyeM2.bmp",
+      "source": "https://raw.githubusercontent.com/mrdoob/three.js/beab9e845f9e5ae11d648f55b24a0e910b56a85a/examples/models/mmd/miku/eyeM2.bmp",
+      "bytes": 49206,
+      "sha256": "a318f2d5bd22e3ac3a5b8cab4021fd68e25042e7730e8c04720cee68e3548565"
+    },
+    {
+      "path": "vmds/wavefile_v2.vmd",
+      "source": "https://raw.githubusercontent.com/mrdoob/three.js/beab9e845f9e5ae11d648f55b24a0e910b56a85a/examples/models/mmd/vmds/wavefile_v2.vmd",
+      "bytes": 1601247,
+      "sha256": "9cf9264ccbefcc2c4c10175bbc66270b1de2a392a08d11bd0b3d233b6b737cbf"
+    },
+    {
+      "path": "vmds/wavefile_camera.vmd",
+      "source": "https://raw.githubusercontent.com/mrdoob/three.js/beab9e845f9e5ae11d648f55b24a0e910b56a85a/examples/models/mmd/vmds/wavefile_camera.vmd",
+      "bytes": 4336,
+      "sha256": "43f6bf0279daff148f53495b6fa7b511e5913196c8b0725e1bc4866ceba3c8c1"
+    }
+  ]
+}
